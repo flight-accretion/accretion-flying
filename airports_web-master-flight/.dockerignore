@@ -1,0 +1,23 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+
+vendor/
+node_modules/
+
+storage/logs/*.log
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+
+# Ye badi zip file image me copy hone ki zaroorat nahi
+airports_web-master-flight.zip
+
+tests/
+.dockerignore
+Dockerfile
+docker-compose*.yml
+README.md
+readme.md
