@@ -1,0 +1,5 @@
+suites:
+    main:
+        namespace: FlyingCalculation
+        psr4_prefix: FlyingCalculation
+        src_path: app

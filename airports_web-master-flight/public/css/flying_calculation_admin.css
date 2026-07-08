@@ -1,0 +1,351 @@
+/*GLOBAL
+============================================= */
+
+html,body {
+	height:100%;     
+	/*overflow-x: hidden;*/
+}
+
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	display: table;
+	font-weight: 100;
+	font-family: 'Lato';
+}
+
+.btn-fixed{
+  position: fixed;
+  bottom: 10px;
+  right: 130px;
+  width: 100px;
+}
+
+.btn-back-fixed{
+  position: fixed;
+  bottom: 10px;
+  right: 20px;
+  width: 100px;
+}
+
+.light-font {
+	font-weight: lighter;
+}
+
+.padding-small{
+	padding-bottom: 10px;
+}
+
+.padding-top-30{
+  padding-top: 30px;
+}
+
+.form-control-feedback {
+  top: 10px;
+}
+
+.img-table-view{
+  height: 40px;
+}
+
+.inline-block{
+  display: inline-block;
+}
+
+/* LOGIN PAGE 
+============================================= */
+.outer-layer {
+	top: 0;
+	min-width: 100%; 
+  min-height: 100%;
+	position: fixed; 
+	background: rgba(0, 0, 0, 0.40);
+}
+
+.login-page {
+	background-image: url("/images/landing_image.jpg");
+	background-repeat: no-repeat;
+	background-size:cover;
+}
+
+.login-logo h1{
+	color: #FFFFFF;
+	font-weight: 600;
+	font-size: 40px;
+}
+
+.login-box{
+  margin-top: 35%;
+}
+
+.login-box-body a {
+	font-size: 16px;
+	color: #FFFFFF;
+}
+
+.login-box-body p {
+	font-size: 16px;
+	color: #000;
+}
+
+.login-box-body{
+  background: rgba(42, 25, 21, 0.65);
+  color: rgb(255, 255, 255);
+  padding: 50px;
+  margin: 5rem 5rem 2.5rem 2.5rem;
+	z-index: 1;
+}
+
+.text-red{
+  color: #ff0000;
+}
+
+/* arrow of navigation items 
+============================================= */
+.sidebar-menu li>a>.fa-angle-right {
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin-right: 10px;
+}
+
+.sidebar-menu li.active>a>.fa-angle-right {
+  -webkit-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
+  -o-transform: rotate(90deg);
+  transform: rotate(90deg);
+}
+
+.sidebar-menu li.active>a>.fa-angle-right {
+  width: auto;
+  height: auto;
+  padding: 0;
+  margin-right: 10px;
+  margin-top: -7px;
+}
+
+.sidebar-menu .treeview-menu>li>a>.fa-angle-right, .sidebar-menu .treeview-menu>li>a>.fa-angle-down {
+  width: auto;
+}
+
+table.dataTable thead > tr > th {
+	padding-left: 9px;
+	padding-right: 18px;
+}
+
+.navbar-nav>.user-menu>.dropdown-menu>li.user-header {
+	height: 180px;
+}
+
+/* Image upload
+============================================= */
+.image-box {
+	height: 150px;
+	width: 240px;
+  background-color: #fff;
+	border: dashed 1px #ccc;
+  text-align: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+}
+
+
+.image-box i, .image-box-landscape i {
+	margin-top: 4.125rem;
+}
+label input[type="file"] {
+  position: fixed;
+  top: -1000px;
+} 
+
+.admin-profile .image-box {
+  margin-bottom: 10px;
+  height: 150px;
+  width: 150px;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border-radius: 50%;
+  border: solid 1px #888;
+  background-color: #fff;
+}
+
+label {
+  max-width: initial;
+}
+
+.profile-image-container {
+  margin-bottom: 10px;
+  height: 150px;
+  width: 150px;
+  -moz-border-radius: 50%;
+  -webkit-border-radius: 50%;
+  border-radius: 50%; 
+}
+
+.image-box  span{
+  display: block;
+  height: 100%;
+  width: 100%;
+  color: #111 !important;
+}
+
+.image-box .upload-preview-image {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+.bar {
+	margin-top: 160px;
+	height: 3px;
+	background: #008D4C;
+	opacity: 0.5;		
+}
+
+.image-box .fa-picture-o , .small-image-box .fa-picture-o, .header-image-box .fa-picture-o {
+	margin-top: 4.125rem;
+}
+
+.small-image-box {
+  position: relative;
+	height: 150px;
+	width: 120px;
+  background-color: #FFF;
+	border: dashed 2px #B7B7B7;
+  border-radius: 8px;
+  text-align: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+}
+
+.header-image-box {
+  position: relative;
+	height: 150px;
+	width: 300px;
+  background-color: #FFF;
+	border: dashed 2px #B7B7B7;
+  border-radius: 8px;
+  text-align: center;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  cursor: pointer;
+}
+.edit-affiliate-image {
+	height: 150px;
+	width: 280px;
+}
+
+.small-image-box span, .header-image-box span{
+  color: #B7B7B7;
+}
+
+.image-row .col-md-4 {
+  padding: 5px;
+}
+
+#table-affiliate td{
+  line-height: 46px;
+}
+
+.delete-image {
+  background-image: url(/images/remove.png);
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background-size: contain;
+  right: 4px;
+  top: -22px;
+}
+
+/*==============MAP===============*/
+
+  #map, #map-hel {
+      height: 400px;
+    }
+    
+    .controls {
+      margin-top: 10px;
+      border: 1px solid transparent;
+      border-radius: 2px 0 0 2px;
+      box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      height: 32px;
+      outline: none;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    #search-location, #search-location-hel {
+      background-color: #fff;
+      font-family: Roboto;
+      font-size: 15px;
+      font-weight: 300;
+      left: 130px;
+      padding: 0 11px 0 13px;
+      text-overflow: ellipsis;
+      width: 366px;
+      height: 40px;
+      position: absolute;
+      z-index: 1000;
+    }
+
+    #search-location:focus, #search-location-hel:focus {
+      border-color: #4d90fe;
+    }
+
+    .pac-container {
+      font-family: Roboto;
+    }
+
+    #type-selector {
+      color: #fff;
+      background-color: #4d90fe;
+      padding: 5px 11px 0px 11px;
+    }
+
+    #type-selector label {
+      font-family: Roboto;
+      font-size: 13px;
+      font-weight: 300;
+    }
+    #target {
+      width: 345px;
+    }
+
+/*==================================*/
+
+
+/*==============MEDIA===============*/
+@media only screen and (max-width : 1300px) {
+  .delete-image {
+    right: 158px;
+    top: -23px;
+  }
+}
+
+@media only screen and (max-width : 768px) { /*iPad*/
+  .delete-image {
+    right: 158px;
+    top: -23px;
+  }
+}
+
+@media only screen and (max-width : 736px) { /*iPhone6*/
+  .delete-image {
+    right: 245px;
+    top: -23px;
+  }
+}
+
+@media only screen and (max-width : 414px ) { /*iPhone6*/
+  .delete-image {
+    right: 99px;
+    top: -23px;
+  }
+}
