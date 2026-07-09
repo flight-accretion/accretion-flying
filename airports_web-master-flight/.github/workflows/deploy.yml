@@ -1,0 +1,68 @@
+name: Deploy Flights App
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/flights-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/flights-app:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # public/ aur nginx/ folder VPS pe bhejo (ye files chhoti hain, image ka hissa nahi)
+      - name: Copy public + nginx config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "public,nginx"
+          target: "/root/Flights-Accretion/app-code"
+          strip_components: 0
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/Flights-Accretion
+            if [ ! -f .env ]; then
+              echo ".env missing on server! Create it manually first, then re-run deploy."
+              exit 1
+            fi
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/flights-app:latest
+            docker compose -f docker-compose.prod.yml up -d --force-recreate
+            sleep 8
+            docker exec flights-prod-app php artisan migrate --force
+            docker exec flights-prod-app php artisan config:cache
+            docker exec flights-prod-app php artisan route:cache
+            docker exec flights-prod-app php artisan view:cache
+            docker exec flights-prod-app php artisan storage:link || true
+            docker image prune -f
