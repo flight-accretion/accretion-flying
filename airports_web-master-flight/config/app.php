@@ -26,9 +26,9 @@ return [
     |
     */
 
-    'url' => 'http://airaccretion.com/',
+    #'url' => 'http://airaccretion.com/',
     'image_upload_url' => public_path('uploads') . DIRECTORY_SEPARATOR,
-
+     'url' => env('APP_URL', 'http://localhost'),
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
