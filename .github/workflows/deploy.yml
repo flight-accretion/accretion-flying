@@ -20,7 +20,7 @@ jobs:
       - name: Build and push app image
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ./airports_web-master-flight
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/flights-app:latest
@@ -33,16 +33,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # public/ aur nginx/ folder VPS pe bhejo (ye files chhoti hain, image ka hissa nahi)
+      # public/ aur nginx/ folder VPS pe bhejo (subfolder ke andar se)
       - name: Copy public + nginx config to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "public,nginx"
+          source: "airports_web-master-flight/public,airports_web-master-flight/nginx"
           target: "/root/Flights-Accretion/app-code"
-          strip_components: 0
+          strip_components: 1
 
       - name: Deploy on VPS
         uses: appleboy/ssh-action@v1.0.3
