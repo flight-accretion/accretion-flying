@@ -188,8 +188,6 @@
 											@endif
 											<tr>
 												<td>Flying Cost</td>
-												<?php $total_flying_cost = round($total_flying_cost); ?>
-												<?php $total_flying_cost += round($additional_cost); ?>
 												<td class="text-right">{{ round($flying_cost) }}</td>
 											</tr>
 											<tr>
@@ -200,23 +198,37 @@
 												<td>Crew Handling</td>
 												<td class="text-right">{{ $crew_handling }}</td>
 											</tr>
+											@if($plane->type_id == 3 && $medical_cost > 0)
+												<tr>
+													<td>Fixed Medical Team Cost</td>
+													<td class="text-right">{{ round($medical_cost) }}</td>
+												</tr>
+											@endif
 											<tr>
 												<td>Other Charges</td>
 												<td class="text-right">As per actual</td>
 											</tr>
 											<tr>
 												<td>Sub Total</td>
-												<td class="text-right">{{ $flying_cost + $ground_handling + $crew_handling}}</td>
+												<td class="text-right">{{ $flying_cost + $ground_handling + $crew_handling + $medical_cost}}</td>
 											</tr>
-											<tr>
-												<td>GST @ 18%</td>
-												<td class="text-right">{{ round((($flying_cost + $ground_handling + $crew_handling ) * 18/100)) }}</td>
-											</tr>
-											<tr>
-												<td>Grand Total</td>
-												<?php $grand_total = round(($flying_cost + $ground_handling + $crew_handling + (($flying_cost + $ground_handling + $crew_handling ) * 18/100))); ?>
-												<td class="text-right">{{  round(($flying_cost + $ground_handling + $crew_handling + (($flying_cost + $ground_handling + $crew_handling ) * 18/100)))}}</td>
-											</tr>
+											@if($plane->type_id != 3)
+												<tr>
+													<td>GST @ 18%</td>
+													<td class="text-right">{{ round((($flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100)) }}</td>
+												</tr>
+												<tr>
+													<td>Grand Total</td>
+													<?php $grand_total = round(($flying_cost + $ground_handling + $crew_handling + $medical_cost + (($flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100))); ?>
+													<td class="text-right">{{  round(($flying_cost + $ground_handling + $crew_handling + $medical_cost + (($flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100)))}}</td>
+												</tr>
+											@else
+												<tr>
+													<td>Grand Total</td>
+													<?php $grand_total = round(($flying_cost + $ground_handling + $crew_handling + $medical_cost)); ?>
+													<td class="text-right">{{  round(($flying_cost + $ground_handling + $crew_handling + $medical_cost))}}</td>
+												</tr>
+											@endif
 										</tbody>
 									</table>
 								</div>
@@ -287,6 +299,7 @@
 						<input id="total-flying-cost" type="hidden" name="total-flying-cost" value="{{ $flying_cost }}" />
 						<input id="ground-handling" type="hidden" name="ground-handling" value="{{ $ground_handling }}" />
 						<input id="crew-handling" type="hidden" name="crew-handling" value="{{ $crew_handling }}" />
+						<input id="medical-cost" type="hidden" name="medical-cost" value="{{ $medical_cost }}" />
 						<input id="flights" type="hidden" name="flights" value="{{ json_encode($flights) }}" />
 						
 						<div class="col-md-3 form-group"><br/>
@@ -307,6 +320,7 @@
 							 <input id="total-flying-cost" type="hidden" name="total-flying-cost" value="{{ $flying_cost }}" />
 							 <input id="ground-handling" type="hidden" name="ground-handling" value="{{ $ground_handling }}" />
 							 <input id="crew-handling" type="hidden" name="crew-handling" value="{{ $crew_handling }}" />
+							 <input id="medical-cost" type="hidden" name="medical-cost" value="{{ $medical_cost }}" />
 							 <input id="flights" type="hidden" name="flights" value="{{ json_encode($flights) }}" />
 						</form>
           </div>

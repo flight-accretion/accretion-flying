@@ -19,7 +19,6 @@ class RouteService
 			'plane.exists' => 'Please select a valid machine.',
 			'time.required' => 'Please enter time.',
 			'time.integer' => 'Please enter valid time.',
-			'distance.required' => 'Please enter distance.',
 			'distance.numeric' => 'Please enter valid distance.',
 		];
 
@@ -28,7 +27,7 @@ class RouteService
 			'location_2' => 'required|different:location_1|exists:airport,id',
 			'plane' => 'required|exists:plane,id',
 			'time' => 'required|integer|min:0',
-			'distance' => 'required|numeric|min:0',
+			'distance' => 'nullable|numeric|min:0',
 		], $messages);
     
 		return $validator;
@@ -41,8 +40,10 @@ class RouteService
       $location_2 = (int) $request_data['location_2'];
       $plane_id = (int) $request_data['plane'];
 
-      $this->saveRouteRow($location_1, $location_2, $plane_id, $request_data['time'], $request_data['distance']);
-      $this->saveRouteRow($location_2, $location_1, $plane_id, $request_data['time'], $request_data['distance']);
+      $distance = $request_data['distance'] ?? 0;
+
+      $this->saveRouteRow($location_1, $location_2, $plane_id, $request_data['time'], $distance);
+      $this->saveRouteRow($location_2, $location_1, $plane_id, $request_data['time'], $distance);
     });
 	}
   
@@ -60,7 +61,6 @@ class RouteService
 			'plane.exists' => 'Please select a valid machine.',
 			'time.required' => 'Please enter time.',
 			'time.integer' => 'Please enter valid time.',
-			'distance.required' => 'Please enter distance.',
 			'distance.numeric' => 'Please enter valid distance.',
 		];
 
@@ -70,7 +70,7 @@ class RouteService
 			'location_2' => 'required|different:location_1|exists:airport,id',
 			'plane' => 'required|exists:plane,id',
 			'time' => 'required|integer|min:0',
-			'distance' => 'required|numeric|min:0',
+			'distance' => 'nullable|numeric|min:0',
 		], $messages);
     
 		return $validator;
@@ -83,8 +83,10 @@ class RouteService
       $location_2 = (int) $request_data['location_2'];
       $plane_id = (int) $request_data['plane'];
 
-      $this->saveRouteRow($location_1, $location_2, $plane_id, $request_data['time'], $request_data['distance'], (int) $request_data['route-id']);
-      $this->saveRouteRow($location_2, $location_1, $plane_id, $request_data['time'], $request_data['distance']);
+      $distance = $request_data['distance'] ?? 0;
+
+      $this->saveRouteRow($location_1, $location_2, $plane_id, $request_data['time'], $distance, (int) $request_data['route-id']);
+      $this->saveRouteRow($location_2, $location_1, $plane_id, $request_data['time'], $distance);
     });
   }
 
@@ -106,7 +108,7 @@ class RouteService
     $route->location_1 = $location_1;
     $route->location_2 = $location_2;
     $route->time = (int) $time;
-    $route->distance = (float) $distance;
+    $route->distance = $distance === '' || $distance === null ? 0 : (float) $distance;
     $route->plane_id = $plane_id;
     $route->price = 0;
     $route->save();

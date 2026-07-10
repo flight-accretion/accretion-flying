@@ -130,12 +130,14 @@ class AirportController extends Controller
       if(!empty($general_charges) && $general_charges->charges > $charges){
         $charges = $general_charges->charges;
       }
+      $crew_handling = ($airport && $airport->crew_handling !== null) ? $airport->crew_handling : 25000;
       
       return view('admin.edit_airport')
       ->with('states', $states)
       ->with('cities', $cities)
       ->with('airport', $airport)
       ->with('charges', $charges)
+      ->with('crew_handling', $crew_handling)
       ->with('menu', 'airport')
       ->with('sub_menu', 'edit_airport');
     }
@@ -166,12 +168,14 @@ class AirportController extends Controller
       if(!empty($general_charges) && $general_charges->charges > $charges){
         $charges = $general_charges->charges;
       }
+      $crew_handling = ($airport && $airport->crew_handling !== null) ? $airport->crew_handling : 25000;
       
       return view('admin.view_airport')
       ->with('states', $states)
       ->with('cities', $cities)
       ->with('airport', $airport)
       ->with('charges', $charges)
+      ->with('crew_handling', $crew_handling)
       ->with('menu', 'airport')
       ->with('sub_menu', 'view_airport');
     }

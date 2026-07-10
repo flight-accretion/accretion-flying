@@ -57,7 +57,8 @@
 							<div class="col-md-2 col-md-offset-1 no-padding">
 								<div id="plane-air-dep-div" class="form-group">
 									<select class="form-control search-planes-element select2" id="departure" name="departure">
-										<option value="0" selected>Departure</option>
+										<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+										<option value="" selected>Departure</option>
 										@foreach($airports as $airport)
 											@if($airport->id == $departure)
 												<option value="{{ $airport->id}}" data-id="{{ $airport->id }}" data-lat="{{ $airport->latitude }}"  data-long="{{ $airport->longitude }}"selected>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
@@ -68,17 +69,18 @@
 									</select>
 									<span class="text-danger">{{$errors->first('departure')}}</span>
 								</div>
-								<div id="helicopter-dep-div" class="form-group @if($plane_type != 2) hide @endif">
+								<div id="helicopter-dep-div" class="form-group hide">
 									<input type="hidden" id="dep-latitude" name="dep-latitude"  value="{{ $dep_latitude }}">
 									<input type="hidden" id="dep-longitude" name="dep-longitude"  value="{{ $dep_longitude }}">
-									<input type="text" class="form-control search-planes-element margin-auto" id="dep-helicopter" placeholder="Departure" name="helicopter-departure" value="{{ $helicopter_departure }}">
+									<input type="hidden" id="dep-helicopter" name="helicopter-departure" value="{{ $helicopter_departure }}">
 									<span class="text-danger">{{$errors->first('helicopter-departure')}}</span>
 								</div>
 							</div>
 							<div class="col-md-2 no-padding">
 								<div id="plane-air-arr-div" class="form-group">
 									<select class="form-control search-planes-element select2" id="plane-air-arrival" name="arrival">
-										<option value="0" selected>Arrival</option>
+										<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+										<option value="" selected>Arrival</option>
 										@foreach($airports as $airport)
 											@if($airport->id == $arrival)
 												<option value="{{ $airport->id}}" data-arr-id="{{ $airport->id }}" data-arr-lat="{{ $airport->latitude }}" data-arr-long="{{ $airport->longitude }}" selected>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
@@ -89,10 +91,10 @@
 									</select>
 									<span class="text-danger">{{$errors->first('arrival')}}</span>
 								</div>
-								<div id="helicopter-arr-div" class="form-group @if($plane_type != 2) hide @endif">
+								<div id="helicopter-arr-div" class="form-group hide">
 									<input type="hidden" id="arr-latitude" name="arr-latitude"  value="{{ $arr_latitude }}">
 									<input type="hidden" id="arr-longitude" name="arr-longitude"  value="{{ $arr_longitude }}">
-									<input type="text" class="form-control search-planes-element margin-auto" id="arr-helicopter" placeholder="Arrival" name="helicopter-arrival" value="{{ $helicopter_arrival }}">
+									<input type="hidden" id="arr-helicopter" name="helicopter-arrival" value="{{ $helicopter_arrival }}">
 									<span class="text-danger">{{$errors->first('helicopter-arrival')}}</span>
 								</div>
 							</div>
@@ -116,7 +118,8 @@
 							<div class="col-md-2 col-md-offset-1 no-padding">
 								<div id="plane-air-dep-round-div" class="form-group">
 									<select class="form-control search-planes-element select2" id="plane-air-departure-round" name="round-departure">
-										<option value="0" selected>Departure</option>
+										<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+										<option value="" selected>Departure</option>
 										@foreach($airports as $airport)
 											<option value="{{ $airport->id}}" data-lat-round="{{ $airport->latitude }}" data-long-round="{{ $airport->longitude }}">{{ $airport->name }}@if(isset($cities[$airport->city_id])), {{ $cities[$airport->city_id]->name }} @endif</option>
 										@endforeach
@@ -125,30 +128,31 @@
 									<input type="hidden" id="dep-longitude-round" name="dep-longitude-round" value="{{ $arr_longitude}}">
 									<span class="error-font text-danger">{{ $errors->first('round-departure')}}</span>
 								</div>
-								<div id="helicopter-dep-round-div" class="form-group @if($plane_type != 2) hide @endif">
-									<input type="text" class="form-control search-planes-element margin-auto" id="helicopter-dep-round" placeholder="Departure" name="round-helocopter-departure" value="{{ $helicopter_arrival ?: 'Select From Map' }}">
+								<div id="helicopter-dep-round-div" class="form-group hide">
+									<input type="hidden" id="helicopter-dep-round" name="round-helocopter-departure" value="{{ $helicopter_arrival ?: 'Select From Map' }}">
 									<span class="error-font text-danger">{{ $errors->first('round-helocopter-departure')}}</span>
 								</div>
 							</div>
 							<div class="col-md-2 no-padding">
 								<div id="plane-air-arr-round-div" class="form-group">
 									<select class="form-control search-planes-element select2" id="plane-air-arrival-round" name="round-arrival">
-										<option value="0" selected>Arrival</option>
+										<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+										<option value="" selected>Arrival</option>
 										@foreach($airports as $airport)
 											<option value="{{ $airport->id}}" data-lat-arr-round="{{ $airport->latitude }}" data-long-arr-round="{{ $airport->longitude }}">{{ $airport->name }}@if(isset($cities[$airport->city_id])), {{ $cities[$airport->city_id]->name }} @endif</option>
 										@endforeach
 									</select>
 									<span class="error-font text-danger">{{ $errors->first('round-arrival')}}</span>
 								</div>
-								<div id="helicopter-arr-round-div" class="form-group @if($plane_type != 2) hide @endif">
-									<input type="text" class="form-control search-planes-element margin-auto" id="helicopter-arr-round" placeholder="Arrival" name="round-helocopter-arrival" value="{{ $helicopter_departure ?: 'Select From Map' }}">
+								<div id="helicopter-arr-round-div" class="form-group hide">
+									<input type="hidden" id="helicopter-arr-round" name="round-helocopter-arrival" value="{{ $helicopter_departure ?: 'Select From Map' }}">
 									<span class="error-font text-danger">{{ $errors->first('round-helocopter-arrival')}}</span>
 								</div>
 							</div>
 							<div class="col-md-2 no-padding">
 								<div class="form-group">
 									<input type="number" class="form-control search-planes-element" id="round-adults" placeholder="Adults" name="round-adults" value="{{ $round_adults }}" min=1 oninput="validity.valid||(value='');">
-									<span class="error-font text-danger">{{ $errors->first('round_adults')}}</span>
+									<span class="error-font text-danger">{{ $errors->first('round-adults')}}</span>
 								</div>
 							</div>
 							<div class="col-md-2 no-padding">
@@ -170,37 +174,43 @@
 									<div class="col-md-2 col-md-offset-1 no-padding">
 										<div id="plane-dep-multi" class="plane-dep-multi form-group">
 											<select class="form-control search-planes-element plane-air-departure-multi select2" data-index="0" id="plane-air-departure-multi-0" name="multi-departure[0]">
-												<option value="0" selected>Departure</option>
+												<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+												<option value="" selected>Departure</option>
 												@foreach($airports as $airport)
 													<option value="{{ $airport->id}}" data-id="{{ $airport->id }}" data-lat="{{ $airport->latitude }}" data-long="{{ $airport->longitude }}">{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id] }} @endif</option>
 												@endforeach
 											</select>
+											<span class="error-font text-danger">{{ $errors->first('multi-departure.0') ?: $errors->first('multi-departure') }}</span>
 										</div>
-										<div id="helicopter-dep-multi" data-type="1" data-index="0" class="helicopter-dep-multi form-group @if($plane_type != 2) hide @endif">
+										<div id="helicopter-dep-multi" data-type="1" data-index="0" class="helicopter-dep-multi form-group hide">
 											<input type="hidden" id="dep-latitude-0" name="dep-multi-latitude[0]">
 											<input type="hidden" id="dep-longitude-0" name="dep-multi-longitude[0]">
-											<input type="text" autocomplete="off" class="form-control search-planes-element margin-auto" id="dep-helicopter-multi-0" placeholder="Departure" name="helicopter-multi-departure[0]" value="Select From Map" readonly>
+											<input type="hidden" id="dep-helicopter-multi-0" name="helicopter-multi-departure[0]" value="Select From Map">
+											<span class="error-font text-danger">{{ $errors->first('helicopter-multi-departure.0') }}</span>
 										</div>
 									</div>
 									<div class="col-md-2 no-padding">
 										<div id="plane-arr-multi" class="plane-arr-multi form-group">
 											<select class="form-control search-planes-element select2 plane-air-arrival-multi" data-index="0" id="plane-air-arrival-multi-0" name="multi-arrival[0]">
-												<option value="0" selected>Arrival</option>
+												<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+												<option value="" selected>Arrival</option>
 												@foreach($airports as $airport)
 													<option value="{{ $airport->id}}" data-arr-id="{{ $airport->id }}" data-arr-lat="{{ $airport->latitude }}" data-arr-long="{{ $airport->longitude }}" >{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id] }} @endif</option>
 												@endforeach
 											</select>
+											<span class="error-font text-danger">{{ $errors->first('multi-arrival.0') ?: $errors->first('multi-arrival') }}</span>
 										</div>
-										<div id="helicopter-arr-multi" data-type="2" data-index="0" class="helicopter-arr-multi form-group @if($plane_type != 2) hide @endif">
+										<div id="helicopter-arr-multi" data-type="2" data-index="0" class="helicopter-arr-multi form-group hide">
 											<input type="hidden" id="arr-latitude-0" name="arr-multi-latitude[0]">
 											<input type="hidden" id="arr-longitude-0" name="arr-multi-longitude[0]">
-											<input type="text" autocomplete="off" class="form-control search-planes-element margin-auto" id="arr-helicopter-multi-0" placeholder="Arrival" name="helicopter-multi-arrival[0]" value="Select From Map" readonly>
+											<input type="hidden" id="arr-helicopter-multi-0" name="helicopter-multi-arrival[0]" value="Select From Map">
+											<span class="error-font text-danger">{{ $errors->first('helicopter-multi-arrival.0') }}</span>
 										</div>
 									</div>
 									<div class="col-md-2 col-xs-12 no-padding">
 										<div class="form-group">
 											<input type="number" class="form-control search-planes-element margin-auto" placeholder="Adults" name="multi-adults[0]" value="" min=1 oninput="validity.valid||(value='');">
-											<span class="error-font text-danger">{{ $errors->first('adults')}}</span>
+											<span class="error-font text-danger">{{ $errors->first('multi-adults.0') ?: $errors->first('multi-adults')}}</span>
 										</div>
 									</div>
 									<div class="col-md-2 col-xs-12 no-padding">
@@ -210,7 +220,7 @@
 												<span class="glyphicon glyphicon-calendar"></span>
 											</span-->
 										</div>
-										<span class="error-font text-danger">{{ $errors->first('from-date') }}</span>
+										<span class="error-font text-danger">{{ $errors->first('multi-date.0') ?: $errors->first('multi-date') }}</span>
 									</div>
 									<div class="col-md-2 col-md-offset-0 col-xs-6 col-xs-offset-3 no-padding" id="btn-search-multi">
 										<button type="submit" class="btn btn-search-plane margin-auto">SEARCH</button>
@@ -223,37 +233,43 @@
 										<div class="col-md-2 col-md-offset-1 no-padding">
 											<div id="plane-dep-multi" class="plane-dep-multi form-group">
 												<select class="form-control search-planes-element plane-air-departure-multi select2" data-index="{{ $index }}" id="plane-air-departure-multi-{{ $index }}" name="multi-departure[{{ $index }}]">
-													<option value="0" selected>Departure</option>
+													<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+													<option value="" selected>Departure</option>
 													@foreach($airports as $airport)
 														<option value="{{ $airport->id}}" data-id="{{ $airport->id }}" data-lat="{{ $airport->latitude }}" data-long="{{ $airport->longitude }}" @if(isset($multi_departure[$index]) && $multi_departure[$index] == $airport->id) selected @endif>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
 													@endforeach
 												</select>
+												<span class="error-font text-danger">{{ $errors->first('multi-departure.'.$index) }}</span>
 											</div>
-											<div id="helicopter-dep-multi" data-type="1" data-index="{{ $index }}" class="helicopter-dep-multi form-group @if($plane_type != 2) hide @endif">
+											<div id="helicopter-dep-multi" data-type="1" data-index="{{ $index }}" class="helicopter-dep-multi form-group hide">
 												<input type="hidden" id="dep-latitude-{{ $index }}" value="{{ $dep_m_latitude }}" name="dep-multi-latitude[{{ $index }}]">
 												<input type="hidden" id="dep-longitude-{{ $index }}" value="@if(isset($dep_multi_longitude[$index])){{$dep_multi_longitude[$index]}}@endif" name="dep-multi-longitude[{{ $index }}]">
-												<input type="text" autocomplete="off" class="form-control search-planes-element margin-auto" id="dep-helicopter-multi-{{ $index }}" placeholder="Departure" value="{{ isset($helicopter_multi_departure[$index]) && $helicopter_multi_departure[$index] ? $helicopter_multi_departure[$index] : 'Select From Map' }}" name="helicopter-multi-departure[{{ $index }}]" readonly>
+												<input type="hidden" id="dep-helicopter-multi-{{ $index }}" value="{{ isset($helicopter_multi_departure[$index]) && $helicopter_multi_departure[$index] ? $helicopter_multi_departure[$index] : 'Select From Map' }}" name="helicopter-multi-departure[{{ $index }}]">
+												<span class="error-font text-danger">{{ $errors->first('helicopter-multi-departure.'.$index) }}</span>
 											</div>
 										</div>
 										<div class="col-md-2 no-padding">
 											<div id="plane-arr-multi" class="plane-arr-multi form-group">
 												<select class="form-control search-planes-element select2 plane-air-arrival-multi" data-index="{{ $index }}" id="plane-air-arrival-multi-{{ $index }}" name="multi-arrival[{{ $index }}]">
-													<option value="0" selected>Arrival</option>
+													<option value="0" class="map-select-option" data-map-option="1">Select from map</option>
+													<option value="" selected>Arrival</option>
 													@foreach($airports as $airport)
 														<option value="{{ $airport->id}}" data-arr-id="{{ $airport->id }}" data-arr-lat="{{ $airport->latitude }}" data-arr-long="{{ $airport->longitude }}" @if(isset($multi_arrival[$index]) && $multi_arrival[$index] == $airport->id) selected @endif>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
 													@endforeach
 												</select>
+												<span class="error-font text-danger">{{ $errors->first('multi-arrival.'.$index) }}</span>
 											</div>
-											<div id="helicopter-arr-multi" data-type="2" data-index="{{ $index }}" class="helicopter-arr-multi form-group @if($plane_type != 2) hide @endif">
+											<div id="helicopter-arr-multi" data-type="2" data-index="{{ $index }}" class="helicopter-arr-multi form-group hide">
 												<input type="hidden" id="arr-latitude-{{ $index }}" value="@if(isset($arr_multi_latitude[$index])){{$arr_multi_latitude[$index]}}@endif" name="arr-multi-latitude[{{ $index }}]">
 												<input type="hidden" id="arr-longitude-{{ $index }}" value="@if(isset($arr_multi_longitude[$index])){{$arr_multi_longitude[$index]}}@endif" name="arr-multi-longitude[{{ $index }}]">
-												<input type="text" autocomplete="off" value="{{ isset($helicopter_multi_arrival[$index]) && $helicopter_multi_arrival[$index] ? $helicopter_multi_arrival[$index] : 'Select From Map' }}" class="form-control search-planes-element margin-auto" id="arr-helicopter-multi-{{ $index }}" placeholder="Arrival" name="helicopter-multi-arrival[{{ $index }}]" readonly>
+												<input type="hidden" value="{{ isset($helicopter_multi_arrival[$index]) && $helicopter_multi_arrival[$index] ? $helicopter_multi_arrival[$index] : 'Select From Map' }}" id="arr-helicopter-multi-{{ $index }}" name="helicopter-multi-arrival[{{ $index }}]">
+												<span class="error-font text-danger">{{ $errors->first('helicopter-multi-arrival.'.$index) }}</span>
 											</div>
 										</div>
 										<div class="col-md-2 col-xs-12 no-padding">
 											<div class="form-group">
 												<input type="number" class="form-control search-planes-element margin-auto" placeholder="Adults" name="multi-adults[{{ $index }}]" value="@if(isset($multi_adults[$index])){{$multi_adults[$index]}}@endif" min=1 oninput="validity.valid||(value='');">
-												<span class="error-font text-danger">{{ $errors->first('adults')}}</span>
+												<span class="error-font text-danger">{{ $errors->first('multi-adults.'.$index) }}</span>
 											</div>
 										</div>
 										<div class="col-md-2 col-xs-12 no-padding">
@@ -261,7 +277,7 @@
 												<input type="text" class="form-control date-time-picker search-planes-element" name="multi-date[{{ $index }}]" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="@if(isset($multi_date[$index])){{$multi_date[$index]}}@endif" tabindex="2">
 												
 											</div>
-											<span class="error-font text-danger">{{ $errors->first('from-date') }}</span>
+											<span class="error-font text-danger">{{ $errors->first('multi-date.'.$index) }}</span>
 										</div>
 										<div class="col-md-2 col-md-offset-0 col-xs-6 col-xs-offset-3 no-padding @if(!(end($keys) == $index))hide @endif">
 											<button type="submit" class="btn btn-search-plane margin-auto">SEARCH</button>
@@ -458,41 +474,267 @@
 <script>
   $(function () {
 		var routes_data = <?php echo json_encode($routes_data);?>;
+		var crew_handling_default = parseFloat(<?php echo json_encode(isset($crew_handling) ? $crew_handling : 25000); ?>);
+		if(isNaN(crew_handling_default) || crew_handling_default < 0) {
+			crew_handling_default = 25000;
+		}
+		var crew_handlings = <?php echo json_encode(isset($crew_handlings) ? $crew_handlings : array()); ?>;
 		var plane_type = $('#planes').val()
 		var trip_id = $('#trips').val();
+		var syncingMapSelectText = false;
+		function getCrewHandlingForAirport(airportId) {
+			var amount = parseFloat(crew_handlings[airportId]);
+			return !isNaN(amount) && amount >= 0 ? amount : crew_handling_default;
+		}
+		function normalizeGstRate(value) {
+			var rate = parseFloat(value);
+			return !isNaN(rate) && rate > 0 ? rate : 18;
+		}
+		function gstRateLabel(value) {
+			var rate = normalizeGstRate(value);
+			return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2);
+		}
+		function isHelicopterSearch() {
+			return String(plane_type) === '2';
+		}
+		function isMapSelectOption($option) {
+			return String($option.data('map-option')) === '1';
+		}
+		function setMapOptionAvailability() {
+			var isHelicopter = isHelicopterSearch();
+			$('.map-select-option').prop('disabled', !isHelicopter).prop('hidden', !isHelicopter);
+
+			if(!isHelicopter) {
+				$('.map-select-option:selected').each(function() {
+					$(this).closest('select').val('').trigger('change.select2');
+				});
+			}
+
+			$('.select2').trigger('change.select2');
+		}
 		function syncSelect2MapText(selector, text, fallbackText) {
 			var $select = $(selector);
 			if(!$select.length) {
 				return;
 			}
-			var displayText = $.trim(text || fallbackText);
-			var $mapOption = $select.find('option[value="0"]').first();
+			var displayText = $.trim(text || fallbackText || 'Select from map');
+			var $mapOption = $select.find('option[data-map-option="1"]').first();
 			if($mapOption.length) {
-				$mapOption.text(displayText);
+				$mapOption.text(displayText).prop('disabled', false).prop('hidden', false);
 			} else {
-				$select.prepend($('<option>', { value: 0, text: displayText }));
+				$select.prepend($('<option>', { value: 0, text: displayText, class: 'map-select-option' }).attr('data-map-option', '1'));
 			}
-			$select.val(0).trigger('change.select2');
+			syncingMapSelectText = true;
+			$select.val('0').trigger('change').trigger('change.select2');
+			syncingMapSelectText = false;
+			$select.next('.select2-container').find('.select2-selection__rendered').attr('title', displayText).text(displayText);
+			$select.next('.select2-container').find('.select2-chosen').text(displayText);
+		}
+		function getMapLocationText(searchSelector, lat, lng, fallbackText) {
+			var searchText = $.trim($(searchSelector).val() || '');
+			var latitude = $.trim(lat || '');
+			var longitude = $.trim(lng || '');
+
+			if(searchText !== '' && searchText.toLowerCase() !== 'select from map') {
+				return searchText;
+			}
+
+			if(latitude !== '' && longitude !== '') {
+				return latitude + ', ' + longitude;
+			}
+
+			return fallbackText || 'Select from map';
+		}
+		function initializeMapSelectionsFromHidden() {
+			var depText = $.trim($('#dep-helicopter').val() || '');
+			var arrText = $.trim($('#arr-helicopter').val() || '');
+
+			if(depText !== '' && depText.toLowerCase() !== 'select from map') {
+				syncSelect2MapText('#departure', depText, 'Departure');
+				syncSelect2MapText('#plane-air-arrival-round', depText, 'Arrival');
+			}
+
+			if(arrText !== '' && arrText.toLowerCase() !== 'select from map') {
+				syncSelect2MapText('#plane-air-arrival', arrText, 'Arrival');
+				syncSelect2MapText('#plane-air-departure-round', arrText, 'Departure');
+			}
+
+			$('.plane-air-departure-multi').each(function() {
+				var index = $(this).data('index');
+				var mapText = $.trim($('#dep-helicopter-multi-' + index).val() || '');
+				if(mapText !== '' && mapText.toLowerCase() !== 'select from map') {
+					syncSelect2MapText('#plane-air-departure-multi-' + index, mapText, 'Departure');
+				}
+			});
+
+			$('.plane-air-arrival-multi').each(function() {
+				var index = $(this).data('index');
+				var mapText = $.trim($('#arr-helicopter-multi-' + index).val() || '');
+				if(mapText !== '' && mapText.toLowerCase() !== 'select from map') {
+					syncSelect2MapText('#plane-air-arrival-multi-' + index, mapText, 'Arrival');
+				}
+			});
 		}
 		function syncMultiTripMode() {
 			if(String(trip_id) === '2') {
-				if(String(plane_type) === '2') {
-					$('.helicopter-arr-multi').removeClass("hide");
-					$('.helicopter-dep-multi').removeClass("hide");
-					$('.plane-arr-multi').removeClass('hide');
-					$('.plane-dep-multi').removeClass('hide');
-				} else {
-					$('.helicopter-arr-multi').addClass("hide");
-					$('.helicopter-dep-multi').addClass("hide");
-					$('.plane-arr-multi').removeClass('hide');
-					$('.plane-dep-multi').removeClass('hide');
-				}
+				$('.helicopter-arr-multi').addClass("hide");
+				$('.helicopter-dep-multi').addClass("hide");
+				$('.plane-arr-multi').removeClass('hide');
+				$('.plane-dep-multi').removeClass('hide');
 			}
 
 			$('#add-more').closest('.row').removeClass('hide');
 			$('#multi-trip-div .delete-trip').closest('[class*="col-"]').removeClass('hide');
 			$('#multi-trip-div .helicopter-dep-multi input[type="text"], #multi-trip-div .helicopter-arr-multi input[type="text"]').prop('readonly', true);
+			setMapOptionAvailability();
 		}
+
+		function isSearchBlank(value) {
+			value = $.trim(value || '');
+			return value === '' || value.toLowerCase() === 'select from map';
+		}
+
+		function hasSearchCoordinate(value) {
+			return $.trim(value || '') !== '';
+		}
+
+		function addSearchError($field, message, state) {
+			state.valid = false;
+			if(!state.firstField.length) {
+				state.firstField = $field;
+			}
+
+			var $group = $field.closest('.form-group');
+			if(!$group.length) {
+				$group = $field.closest('[class*="col-"]');
+			}
+
+			$group.addClass('has-error');
+			if($group.find('.search-validation-error').length === 0) {
+				$group.append('<span class="text-danger search-validation-error">' + message + '</span>');
+			}
+		}
+
+		function validateSearchForm($form) {
+			if($form.find('input[name="flower-shower"]').length) {
+				return true;
+			}
+
+			$form.find('.search-validation-error').remove();
+			$form.find('.has-error').removeClass('has-error');
+
+			var state = { valid: true, firstField: $() };
+			var currentTrip = String($('#trips').val() || '');
+			var currentPlane = String($('#planes').val() || $('#planes option:selected').data('id') || '');
+
+			if(currentPlane === '' || currentPlane === '0') {
+				addSearchError($('#planes'), 'Select machine type.', state);
+			}
+
+			if(currentTrip !== '2') {
+				var $departureSelect = $('#plane-air-departure').length ? $('#plane-air-departure') : $('#departure');
+				var $arrivalSelect = $('#plane-air-arrival');
+
+					if(currentPlane === '2') {
+						if(isSearchBlank($('#dep-helicopter').val()) || !hasSearchCoordinate($('#dep-latitude').val()) || !hasSearchCoordinate($('#dep-longitude').val())) {
+							addSearchError($departureSelect, 'Please select departure destination.', state);
+						}
+
+						if(isSearchBlank($('#arr-helicopter').val()) || !hasSearchCoordinate($('#arr-latitude').val()) || !hasSearchCoordinate($('#arr-longitude').val())) {
+							addSearchError($arrivalSelect, 'Please select arrival destination.', state);
+						}
+				} else {
+					if(!$departureSelect.val() || $departureSelect.val() === '0' || !hasSearchCoordinate($('#dep-latitude').val()) || !hasSearchCoordinate($('#dep-longitude').val())) {
+						addSearchError($departureSelect, 'Please select departure airport.', state);
+					}
+
+					if(!$arrivalSelect.val() || $arrivalSelect.val() === '0' || !hasSearchCoordinate($('#arr-latitude').val()) || !hasSearchCoordinate($('#arr-longitude').val())) {
+						addSearchError($arrivalSelect, 'Please select arrival airport.', state);
+					}
+				}
+
+				if(!$('#adults').val() || Number($('#adults').val()) < 1) {
+					addSearchError($('#adults'), 'Please enter valid no. of adults.', state);
+				}
+
+				if(!$('#date').val()) {
+					addSearchError($('#date'), 'Please select departure date.', state);
+				}
+
+				if(currentTrip === '1') {
+					if(!$('#round-date').val()) {
+						addSearchError($('#round-date'), 'Please select return date.', state);
+					}
+
+					if($('#round-adults').val() !== '' && Number($('#round-adults').val()) < 1) {
+						addSearchError($('#round-adults'), 'Please enter valid no. of adults.', state);
+					}
+				}
+			} else {
+				var rowCount = 0;
+				$('#multi-trip-div .multi-trip-div-row > .row').each(function() {
+					rowCount++;
+					var $row = $(this);
+					var $depSelect = $row.find('.plane-air-departure-multi');
+					var $arrSelect = $row.find('.plane-air-arrival-multi');
+					var index = $depSelect.data('index');
+					var $adults = $row.find('input[name^="multi-adults"]');
+					var $date = $row.find('input[name^="multi-date"]');
+
+					if(currentPlane === '2') {
+						var $depMap = $('#dep-helicopter-multi-' + index);
+						var $arrMap = $('#arr-helicopter-multi-' + index);
+						if(isSearchBlank($depMap.val()) || !hasSearchCoordinate($('#dep-latitude-' + index).val()) || !hasSearchCoordinate($('#dep-longitude-' + index).val())) {
+							addSearchError($depSelect, 'Please select departure destination.', state);
+						}
+
+						if(isSearchBlank($arrMap.val()) || !hasSearchCoordinate($('#arr-latitude-' + index).val()) || !hasSearchCoordinate($('#arr-longitude-' + index).val())) {
+							addSearchError($arrSelect, 'Please select arrival destination.', state);
+						}
+					} else {
+						if(!$depSelect.val() || $depSelect.val() === '0' || !hasSearchCoordinate($('#dep-latitude-' + index).val()) || !hasSearchCoordinate($('#dep-longitude-' + index).val())) {
+							addSearchError($depSelect, 'Please select departure airport.', state);
+						}
+
+						if(!$arrSelect.val() || $arrSelect.val() === '0' || !hasSearchCoordinate($('#arr-latitude-' + index).val()) || !hasSearchCoordinate($('#arr-longitude-' + index).val())) {
+							addSearchError($arrSelect, 'Please select arrival airport.', state);
+						}
+					}
+
+					if(!$adults.val() || Number($adults.val()) < 1) {
+						addSearchError($adults, 'Please enter valid no. of adults.', state);
+					}
+
+					if(!$date.val()) {
+						addSearchError($date, 'Please select departure date.', state);
+					}
+				});
+
+				if(rowCount === 0) {
+					addSearchError($('#add-more'), 'Please add at least one trip.', state);
+				}
+			}
+
+			if(!state.valid && state.firstField.length) {
+				var $scrollTarget = state.firstField.closest('.form-group');
+				if(!$scrollTarget.length) {
+					$scrollTarget = state.firstField.closest('[class*="col-"]');
+				}
+				if($scrollTarget.length) {
+					$('html, body').animate({ scrollTop: $scrollTarget.offset().top - 100 }, 200);
+				}
+			}
+
+			return state.valid;
+		}
+
+		$('form[action$="/plane/search"]').on('submit', function(e) {
+			if(!validateSearchForm($(this))) {
+				e.preventDefault();
+				return false;
+			}
+		});
+
 		$('#add-more').click(function(){
 			$('#multi-trip-div .btn-search-plane').closest('div').addClass('hide');
 			var element_index = 0;
@@ -505,31 +747,33 @@
 			multi_html += '<div class="col-md-2 col-md-offset-1 no-padding">';
 			multi_html += '		<div id="plane-dep-multi" class="plane-dep-multi form-group">';
 			multi_html += '			<select class="form-control search-planes-element plane-air-departure-multi select2" id="plane-air-departure-multi-'+element_index+'" data-index="'+element_index+'"  name="multi-departure['+element_index+']">';
-			multi_html += '				<option value="0" selected>Departure</option>';
+			multi_html += '				<option value="0" class="map-select-option" data-map-option="1">Select from map</option>';
+			multi_html += '				<option value="" selected>Departure</option>';
 			multi_html += '				@foreach($airports as $airport)';
 			multi_html += '					<option value="{{ $airport->id}}" data-id="{{ $airport->id }}" data-lat="{{ $airport->latitude }}" data-long="{{ $airport->longitude }}">{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>';
 			multi_html += '				@endforeach';
 			multi_html += '			</select>';
 			multi_html += '		</div>';
-			multi_html += '		<div id="helicopter-dep-multi" data-type="1" data-index="'+element_index+'" class="helicopter-dep-multi form-group '+(plane_type != 2 ? 'hide': '')+'">';
+			multi_html += '		<div id="helicopter-dep-multi" data-type="1" data-index="'+element_index+'" class="helicopter-dep-multi form-group hide">';
 			multi_html += '			<input type="hidden" id="dep-latitude-'+element_index+'" name="dep-multi-latitude['+element_index+']">';
 			multi_html += '			<input type="hidden" id="dep-longitude-'+element_index+'" name="dep-multi-longitude['+element_index+']">';
-			multi_html += '			<input type="text" autocomplete="off"  class="form-control search-planes-element margin-auto" id="dep-helicopter-multi-'+element_index+'" placeholder="Departure" name="helicopter-multi-departure['+element_index+']" value="Select From Map" readonly>';
+			multi_html += '			<input type="hidden" id="dep-helicopter-multi-'+element_index+'" name="helicopter-multi-departure['+element_index+']" value="Select From Map">';
 			multi_html += '		</div>';
 			multi_html += '	</div>';
 			multi_html += '	<div class="col-md-2 no-padding">';
 			multi_html += '		<div id="plane-arr-multi" class="plane-arr-multi form-group">';
 			multi_html += '			<select class="form-control  search-planes-element plane-air-arrival-multi select2" data-index="'+element_index+'" id="plane-air-arrival-multi-'+element_index+'" name="multi-arrival['+element_index+']">';
-			multi_html += '				<option value="0" selected>Arrival</option>';
+			multi_html += '				<option value="0" class="map-select-option" data-map-option="1">Select from map</option>';
+			multi_html += '				<option value="" selected>Arrival</option>';
 			multi_html += '				@foreach($airports as $airport)';
 			multi_html += '					<option value="{{ $airport->id}}" data-arr-id="{{ $airport->id }}" data-arr-lat="{{ $airport->latitude }}" data-arr-long="{{ $airport->longitude }}"  >{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>';
 			multi_html += '				@endforeach';
 			multi_html += '			</select>';
 			multi_html += '		</div>';
-			multi_html += '		<div id="helicopter-arr-multi" data-type="2" data-index="'+element_index+'" class="helicopter-arr-multi form-group '+(plane_type != 2 ? 'hide': '')+'">';
+			multi_html += '		<div id="helicopter-arr-multi" data-type="2" data-index="'+element_index+'" class="helicopter-arr-multi form-group hide">';
 			multi_html += '			<input type="hidden" id="arr-latitude-'+element_index+'" name="arr-multi-latitude['+element_index+']">';
 			multi_html += '			<input type="hidden" id="arr-longitude-'+element_index+'" name="arr-multi-longitude['+element_index+']">';
-			multi_html += '			<input type="text" autocomplete="off" class="form-control search-planes-element margin-auto" id="arr-helicopter-multi-'+element_index+'" placeholder="Arrival" name="helicopter-multi-arrival['+element_index+']" value="Select From Map" readonly>';
+			multi_html += '			<input type="hidden" id="arr-helicopter-multi-'+element_index+'" name="helicopter-multi-arrival['+element_index+']" value="Select From Map">';
 			multi_html += '		</div>';
 			multi_html += '	</div>';
 			multi_html += '	<div class="col-md-2 col-xs-12 no-padding">';
@@ -581,6 +825,10 @@
     
     //Initialize Select2 Elements
     $(".select2").select2();      
+    setMapOptionAvailability();
+    if(isHelicopterSearch()) {
+      initializeMapSelectionsFromHidden();
+    }
  
     $('.btn').on('click', function(){
       $('.btn').removeClass('selected');
@@ -594,16 +842,16 @@
 			if(plane_type == 2){
 				if(trip_id != 2){
 					$("#plane-air-dep-div").removeClass('hide');
-					$("#helicopter-dep-div").removeClass("hide");
+					$("#helicopter-dep-div").addClass("hide");
 					$("#plane-air-arr-div").removeClass("hide");
-					$("#helicopter-arr-div").removeClass("hide");
+					$("#helicopter-arr-div").addClass("hide");
 					$("#plane-air-dep-round-div").removeClass('hide');
-					$("#helicopter-dep-round-div").removeClass("hide");
+					$("#helicopter-dep-round-div").addClass("hide");
 					$("#plane-air-arr-round-div").removeClass("hide");
-					$("#helicopter-arr-round-div").removeClass("hide");          
+					$("#helicopter-arr-round-div").addClass("hide");          
 				} else {
-					$('.helicopter-arr-multi').removeClass("hide");
-					$('.helicopter-dep-multi').removeClass("hide");
+					$('.helicopter-arr-multi').addClass("hide");
+					$('.helicopter-dep-multi').addClass("hide");
 					$('.plane-arr-multi').removeClass('hide');
 					$('.plane-dep-multi').removeClass('hide');
 				}
@@ -640,7 +888,20 @@
 			var latitude = selectedOption.data('lat');
 			var longitude = selectedOption.data('long'); 
 			var index = $(this).data('index');				
-			if(selectedOption.val() == 0) {
+			if(isMapSelectOption(selectedOption)) {
+				if(syncingMapSelectText) {
+					return;
+				}
+
+				if(isHelicopterSearch()) {
+					openMultiTripMapModal(1, index);
+					return;
+				}
+
+				$(this).val('').trigger('change.select2');
+				return;
+			}
+			if(!selectedOption.val() || selectedOption.val() == 0) {
 				$("#dep-latitude-"+index).val('');
 				$("#dep-longitude-"+index).val('');
 				$("#dep-helicopter-multi-"+index).val('Select From Map');
@@ -656,7 +917,20 @@
 			var latitude = selectedOption.data('arr-lat');
 			var longitude = selectedOption.data('arr-long');
 			var index = $(this).data('index');
-			if(selectedOption.val() == 0) {
+			if(isMapSelectOption(selectedOption)) {
+				if(syncingMapSelectText) {
+					return;
+				}
+
+				if(isHelicopterSearch()) {
+					openMultiTripMapModal(2, index);
+					return;
+				}
+
+				$(this).val('').trigger('change.select2');
+				return;
+			}
+			if(!selectedOption.val() || selectedOption.val() == 0) {
 				$("#arr-latitude-"+index).val('');
 				$("#arr-longitude-"+index).val('');
 				$("#arr-helicopter-multi-"+index).val('Select From Map');
@@ -665,6 +939,64 @@
 			$("#arr-latitude-"+index).val(latitude);
 			$("#arr-longitude-"+index).val(longitude);
 			$("#arr-helicopter-multi-"+index).val(selectedOption.text().trim());
+		});
+
+		function openMultiTripMapModal(fieldType, index) {
+			$('#field-type').val(fieldType);
+			$('#current-index').val(index);
+
+			if(fieldType == 1) {
+				$("#lat-multi").val($("#dep-latitude-" + index).val());
+				$("#long-multi").val($("#dep-longitude-" + index).val());
+			} else {
+				$("#lat-multi").val($("#arr-latitude-" + index).val());
+				$("#long-multi").val($("#arr-longitude-" + index).val());
+			}
+
+			$('#multi-trip-pick-modal').modal('show');
+			$('#long-multi').trigger('change');
+		}
+
+		$('#departure').on('select2:select', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				$('#helicopter-pick-modal').modal('show');
+			}
+		});
+
+		$('#plane-air-arrival').on('select2:select', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				$('#helicopter-drop-modal').modal('show');
+			}
+		});
+
+		$('#plane-air-departure-round').on('select2:select', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				$('#helicopter-drop-modal').modal('show');
+			}
+		});
+
+		$('#plane-air-arrival-round').on('select2:select', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				$('#helicopter-pick-modal').modal('show');
+			}
+		});
+
+		$(document).on('select2:select', '.plane-air-departure-multi', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				openMultiTripMapModal(1, $(this).data('index'));
+			}
+		});
+
+		$(document).on('select2:select', '.plane-air-arrival-multi', function(e) {
+			var selectedOption = $(e.params.data.element);
+			if(isMapSelectOption(selectedOption) && isHelicopterSearch()) {
+				openMultiTripMapModal(2, $(this).data('index'));
+			}
 		});
 		
 		$(document).on('click', '.helicopter-dep-multi, .helicopter-arr-multi', function () {
@@ -721,7 +1053,7 @@
 			
 			var pick_lat = $("#lat-multi").val();
 			var pick_long = $("#long-multi").val();
-			var searchbox = document.getElementById('search-location-multi').value;
+			var searchbox = getMapLocationText('#search-location-multi', pick_lat, pick_long, 'Select From Map');
 			if(field_type == 1){
 				$("#dep-latitude-"+current_index).val(pick_lat);
 				$("#dep-longitude-"+current_index).val(pick_long);
@@ -745,7 +1077,7 @@
 			e.preventDefault();
 			var pick_lat = $("#lat").val();
 			var pick_long = $("#long").val();
-			var searchbox = document.getElementById('search-location').value;
+			var searchbox = getMapLocationText('#search-location', pick_lat, pick_long, 'Select From Map');
 			$("#dep-latitude").val(pick_lat);
 			$("#dep-longitude").val(pick_long);
 			$("#dep-helicopter").val(searchbox);
@@ -759,7 +1091,7 @@
 			e.preventDefault();
 			var drop_lat = $("#lat-drop").val();
 			var drop_long = $("#long-drop").val();
-			var searchbox = document.getElementById('search-location-drop').value;
+			var searchbox = getMapLocationText('#search-location-drop', drop_lat, drop_long, 'Select From Map');
 			$("#arr-latitude").val(drop_lat);
 			$("#arr-longitude").val(drop_long);
 			$("#dep-latitude-round").val(drop_lat);
@@ -796,24 +1128,67 @@
 		});
     
     $("#departure").on('change', function() {
-      var latitude = $('option:selected', this).data('lat');
-      var longitude = $('option:selected', this).data('long');
-      var departureText = $('option:selected', this).text().trim();
+      var selectedOption = $('option:selected', this);
+      if(isMapSelectOption(selectedOption)) {
+        if(syncingMapSelectText) {
+          return;
+        }
+
+        if(isHelicopterSearch()) {
+          $('#helicopter-pick-modal').modal('show');
+          return;
+        }
+
+        $(this).val('').trigger('change.select2');
+        return;
+      }
+
+      if(!selectedOption.val() || selectedOption.val() == 0) {
+        $("#dep-latitude").val('');
+        $("#dep-longitude").val('');
+        $("#dep-helicopter").val('');
+        return;
+      }
+
+      var latitude = selectedOption.data('lat');
+      var longitude = selectedOption.data('long');
+      var departureText = selectedOption.text().trim();
       //console.log(latitude);
       $("#dep-latitude").val(latitude);
       $("#dep-longitude").val(longitude);
       $("#dep-helicopter").val(departureText);
       
-      var dep_id = $("option:selected", this).data('id');
+      var dep_id = selectedOption.data('id');
       $('#plane-air-arrival-round').val(dep_id);
       $('#plane-air-arrival-round').select2().val(dep_id).trigger('change');
     });  
     
     $("#plane-air-arrival").on('change', function() {
+			var selectedOption = $('option:selected', this);
+			if(isMapSelectOption(selectedOption)) {
+				if(syncingMapSelectText) {
+					return;
+				}
+
+				if(isHelicopterSearch()) {
+					$('#helicopter-drop-modal').modal('show');
+					return;
+				}
+
+				$(this).val('').trigger('change.select2');
+				return;
+			}
+
+			if(!selectedOption.val() || selectedOption.val() == 0) {
+				$("#arr-latitude").val('');
+				$("#arr-longitude").val('');
+				$("#arr-helicopter").val('');
+				return;
+			}
 			
-			var latitude = $('option:selected', this).data('arr-lat');
-			var longitude = $('option:selected', this).data('arr-long');
-			var arrivalText = $('option:selected', this).text().trim();
+			var latitude = selectedOption.data('arr-lat');
+			var longitude = selectedOption.data('arr-long');
+			var arrivalText = selectedOption.text().trim();
 			
 			$("#arr-latitude").val(latitude);
 			$("#arr-longitude").val(longitude);
@@ -826,14 +1201,27 @@
       $("#dep-latitude-round").val(latitude_round);
       $("#dep-longitude-round").val(longitude_round);
       */
-      var arr_id = $("option:selected", this).data('arr-id');
+      var arr_id = selectedOption.data('arr-id');
       $('#plane-air-departure-round').val(arr_id);
       $('#plane-air-departure-round').select2().val(arr_id).trigger('change');
     });
 
 		$("#plane-air-departure-round").on('change', function() {
 			var selectedOption = $('option:selected', this);
-			if(selectedOption.val() == 0) {
+			if(isMapSelectOption(selectedOption)) {
+				if(syncingMapSelectText) {
+					return;
+				}
+
+				if(isHelicopterSearch()) {
+					$('#helicopter-drop-modal').modal('show');
+					return;
+				}
+
+				$(this).val('').trigger('change.select2');
+				return;
+			}
+			if(!selectedOption.val() || selectedOption.val() == 0) {
 				$("#helicopter-dep-round").val('Select From Map');
 				return;
 			}
@@ -844,7 +1232,20 @@
 
 		$("#plane-air-arrival-round").on('change', function() {
 			var selectedOption = $('option:selected', this);
-			if(selectedOption.val() == 0) {
+			if(isMapSelectOption(selectedOption)) {
+				if(syncingMapSelectText) {
+					return;
+				}
+
+				if(isHelicopterSearch()) {
+					$('#helicopter-pick-modal').modal('show');
+					return;
+				}
+
+				$(this).val('').trigger('change.select2');
+				return;
+			}
+			if(!selectedOption.val() || selectedOption.val() == 0) {
 				$("#helicopter-arr-round").val('Select From Map');
 				return;
 			}
@@ -951,7 +1352,11 @@
 						if(type_id == 2){
 							handling_charges = 0;
 						}
-            var tax = plane_list[i].tax;
+            var medical_cost = parseFloat(plane_list[i].medical_cost);
+            if(isNaN(medical_cost)){
+              medical_cost = 0;
+            }
+            var tax = normalizeGstRate(plane_list[i].tax);
             
             var air_departure_geo = new google.maps.LatLng(air_departure_lat, air_departure_lng);
 						if(plane_type == 2){
@@ -1409,7 +1814,7 @@
            
             var crew_handling_charges = 0;
 						if(trip_type == 1) {
-							crew_handling_charges = 25000 * crew_handling_additional_days;
+							crew_handling_charges = getCrewHandlingForAirport(arrival) * crew_handling_additional_days;
 						}
             var sub_total = flight_cost + handling_charges + crew_handling_charges;           
            // console.log("Sub_total" +sub_total);
@@ -1419,7 +1824,7 @@
             
             //fixed medical team cost
             if(type_id == 3){
-              var final_amount = sub_total + 40000;
+              var final_amount = sub_total + medical_cost;
               //console.log("final_amount" +final_amount);
             } else{
               var final_amount = tax_amount + sub_total;
@@ -1436,9 +1841,9 @@
             list += '<h5><label class="fixed-width"><b>Sub Total</b></label> : <i class="fa fa-rupee"></i>'+sub_total.toFixed()+'</h5>';
             
             if(type_id == 3){
-              list += '<h5><label class="fixed-width"><b>Fixed Medical Team Cost</b></label> : <i class="fa fa-rupee"></i>'+40000+'</h5>';
+              list += '<h5><label class="fixed-width"><b>Fixed Medical Team Cost</b></label> : <i class="fa fa-rupee"></i>'+medical_cost.toFixed()+'</h5>';
             } else{
-              list += '<h5><label class="fixed-width"><b>GST (18%)</b></label> : <i class="fa fa-rupee"></i>'+tax_amount.toFixed()+'</h5>';
+              list += '<h5><label class="fixed-width"><b>GST ('+gstRateLabel(tax)+'%)</b></label> : <i class="fa fa-rupee"></i>'+tax_amount.toFixed()+'</h5>';
             }
 						
             list += '<h5 class="grand-total" data-id="'+plane_list[i].id+'" data-total="'+final_amount.toFixed()+'"><label class="fixed-width"><b>Grand Total</b></label> : <i class="fa fa-rupee"></i>'+final_amount.toFixed()+'</h5>';
@@ -1537,7 +1942,11 @@
             }
             var avail_distance = plane_list[i].avail_distance;
             var handling_charges = plane_list[i].handling_charges;
-            var tax = plane_list[i].tax;
+            var medical_cost = parseFloat(plane_list[i].medical_cost);
+            if(isNaN(medical_cost)){
+              medical_cost = 0;
+            }
+            var tax = normalizeGstRate(plane_list[i].tax);
             var avail_geo = new google.maps.LatLng(avail_planes_lat, avail_planes_lng);
 						
 						var distance = 0;
@@ -1695,7 +2104,7 @@
 										}
 										json_data[index]['additional_days'] = additional_days;
 										json_data[index]['crew_handling_additional_days'] = crew_handling_additional_days;
-										crew_handling_charges += (25000 * crew_handling_additional_days);
+										crew_handling_charges += (getCrewHandlingForAirport(arrival[previous_index]) * crew_handling_additional_days);
 										flight_cost += additional_days * price_per_hour * 2;
 										
 									}
@@ -1807,7 +2216,7 @@
             var tax_amount = (tax/100) * sub_total;
             
             if(type_id == 3){
-              var final_amount = sub_total + 40000;
+              var final_amount = sub_total + medical_cost;
             } else{
               var final_amount = tax_amount + sub_total;
             }
@@ -1819,9 +2228,9 @@
             list += '<h5><label class="fixed-width"><b>Sub Total</b></label> : <i class="fa fa-rupee"></i>'+sub_total.toFixed()+'</h5>';
             
             if(type_id == 3){
-              list += '<h5><label class="fixed-width"><b>Fixed Medical Team Cost</b></label> : <i class="fa fa-rupee"></i>'+40000+'</h5>';
+              list += '<h5><label class="fixed-width"><b>Fixed Medical Team Cost</b></label> : <i class="fa fa-rupee"></i>'+medical_cost.toFixed()+'</h5>';
             } else{
-              list += '<h5><label class="fixed-width"><b>GST (18%)</b></label> : <i class="fa fa-rupee"></i>'+tax_amount.toFixed()+'</h5>';
+              list += '<h5><label class="fixed-width"><b>GST ('+gstRateLabel(tax)+'%)</b></label> : <i class="fa fa-rupee"></i>'+tax_amount.toFixed()+'</h5>';
             }
 						/* if(plane_list[i].id == 35){
 							console.log(plane_list[i].id,json_data,JSON.stringify(json_data));
@@ -2345,6 +2754,13 @@ document.addEventListener("DOMContentLoaded", function () {
       reverseGeocode(pos.lat, pos.lng);
     });
 
+    map.on("click", function (event) {
+      const pos = event.latlng;
+      marker.setLatLng(pos);
+      updateLatLng(pos.lat, pos.lng);
+      reverseGeocode(pos.lat, pos.lng);
+    });
+
     // Search handlers
     const input = document.getElementById("search-location");
     input.addEventListener("keypress", function (e) {
@@ -2422,7 +2838,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btn-pick").addEventListener("click", function () {
     const lat = document.getElementById("lat").value;
     const lng = document.getElementById("long").value;
-    const place = document.getElementById("search-location").value;
+    const place = document.getElementById("search-location").value || (lat && lng ? lat + ", " + lng : "Select From Map");
 
     document.getElementById("dep-latitude").value = lat;
     document.getElementById("dep-longitude").value = lng;
@@ -2457,6 +2873,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     markerDrop.on("dragend", function () {
       const pos = markerDrop.getLatLng();
+      updateDropLatLng(pos.lat, pos.lng);
+      reverseGeocodeDrop(pos.lat, pos.lng);
+    });
+
+    mapDrop.on("click", function (event) {
+      const pos = event.latlng;
+      markerDrop.setLatLng(pos);
       updateDropLatLng(pos.lat, pos.lng);
       reverseGeocodeDrop(pos.lat, pos.lng);
     });
@@ -2538,7 +2961,7 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById("btn-drop").addEventListener("click", function () {
     const lat = document.getElementById("lat-drop").value;
     const lng = document.getElementById("long-drop").value;
-    const place = document.getElementById("search-location-drop").value;
+    const place = document.getElementById("search-location-drop").value || (lat && lng ? lat + ", " + lng : "Select From Map");
 
     document.getElementById("arr-latitude").value = lat;
     document.getElementById("arr-longitude").value = lng;
@@ -2574,6 +2997,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     markerMulti.on("dragend", function () {
       const pos = markerMulti.getLatLng();
+      updateMultiModalFields(pos.lat, pos.lng, "");
+      reverseGeocodeMulti(pos.lat, pos.lng);
+    });
+
+    mapMulti.on("click", function (event) {
+      const pos = event.latlng;
+      markerMulti.setLatLng(pos);
       updateMultiModalFields(pos.lat, pos.lng, "");
       reverseGeocodeMulti(pos.lat, pos.lng);
     });
@@ -2619,13 +3049,15 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!$select.length) {
         return;
       }
-      let $mapOption = $select.find('option[value="0"]').first();
+      let $mapOption = $select.find('option[data-map-option="1"]').first();
       if ($mapOption.length) {
-        $mapOption.text(displayText);
+        $mapOption.text(displayText).prop('disabled', false).prop('hidden', false);
       } else {
-        $select.prepend($('<option>', { value: 0, text: displayText }));
+        $select.prepend($('<option>', { value: 0, text: displayText, class: 'map-select-option' }).attr('data-map-option', '1'));
       }
       $select.val(0).trigger('change.select2');
+      $select.next('.select2-container').find('.select2-selection__rendered').attr('title', displayText).text(displayText);
+      $select.next('.select2-container').find('.select2-chosen').text(displayText);
     }
 
     document.getElementById("btn-multi").addEventListener("click", function () {
@@ -2633,7 +3065,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const currentIndex = document.getElementById("current-index").value;
   const lat = document.getElementById("lat-multi").value;
   const lng = document.getElementById("long-multi").value;
-  const place = document.getElementById("search-location-multi").value;
+  const place = document.getElementById("search-location-multi").value || (lat && lng ? lat + ", " + lng : "Select From Map");
 
   if (fieldType == 1) {
     $("#dep-latitude-" + currentIndex).val(lat);

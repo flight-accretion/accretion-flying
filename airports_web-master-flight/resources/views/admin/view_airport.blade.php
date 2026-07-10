@@ -35,6 +35,11 @@
                   <input type="text" class="form-control" id="charges" placeholder="Enter Airport Handling Charge" name="charges" value="{{ $charges }}" disabled>
                   <span class="error-font text-danger">{{ $errors->first('charges')}}</span>
                 </div>
+                 <div class="form-group col-md-3">
+                  <label>Crew Handling</label>
+                  <input type="text" class="form-control" id="crew_handling" placeholder="Enter Crew Handling Charge" name="crew_handling" value="{{ $crew_handling }}" disabled>
+                  <span class="error-font text-danger">{{ $errors->first('crew_handling')}}</span>
+                </div>
                 <div class="form-group col-md-3">
                   <label for="gt">Ground Time (In minutes)</label>
                   <input type="number" class="form-control" id="gt" placeholder="Enter ground time" name="gt" value="{{ $airport->gt }}" disabled>

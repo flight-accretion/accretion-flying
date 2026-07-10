@@ -204,9 +204,9 @@
         @include('partials.flash_toasts')
         @yield('content') 
       </div>
-      <footer class="main-footer">
+      <!-- <footer class="main-footer">
         <strong>Copyright &copy; 2018</strong> All rights reserved.
-      </footer>
+      </footer> -->
     </div>
     <script>
       $(function () {

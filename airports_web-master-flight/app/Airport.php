@@ -14,6 +14,7 @@ class Airport extends Model
         'name',
         'latitude',
         'longitude',
-        'city_id'
+        'city_id',
+        'crew_handling'
     ];
 }

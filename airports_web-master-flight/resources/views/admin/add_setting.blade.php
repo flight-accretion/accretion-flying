@@ -14,7 +14,7 @@
                 <div class="col-md-6 col-md-offset-3"> 
                   <label for="status">Type *</label><br>
                   <label class="radio-inline">
-                    <input id="type-1" type="radio" class="minimal status" name="type" value="0"<?php if(old('type') == "0") {echo "checked";}?> checked>&nbsp;GST
+                    <input id="type-1" type="radio" class="minimal status" name="type" value="0"<?php if(old('type', '0') == "0") {echo "checked";}?>>&nbsp;GST
                   </label>
                   <label class="radio-inline">
                     <input id="type-2" type="radio" class="minimal status" name="type" value="1"<?php if(old('type') == "1") {echo "checked";}?>>&nbsp;Fixed medical team cost 
@@ -25,7 +25,7 @@
                 <div class="col-md-3 col-md-offset-3">
                   <label for="description">From Date *</label>
 									<div class="input-group date" id="from-date">								
-										<input type="text" class="form-control from-date" id="from-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ date('d-m-Y')}}" tabindex="2">
+										<input type="text" class="form-control from-date" id="from-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ old('from-date', date('d-m-Y'))}}" tabindex="2">
 										<span class="input-group-addon">
 											<span class="glyphicon glyphicon-calendar"></span>
 										</span>
@@ -35,7 +35,7 @@
                 <div class="col-md-3">
                   <label for="description">To Date *</label>
 									<div class="input-group date" id="to-date">								
-										<input type="text" class="form-control to-date" id="to-date" name="to-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ date('d-m-Y', strtotime('+1 year'))}}" tabindex="2">
+										<input type="text" class="form-control to-date" id="to-date" name="to-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ old('to-date', date('d-m-Y', strtotime('+1 year')))}}" tabindex="2">
 										<span class="input-group-addon">
 											<span class="glyphicon glyphicon-calendar"></span>
 										</span>
@@ -43,8 +43,8 @@
 									<span class="error-font text-danger">{{ $errors->first('to-date') }}</span>
 								</div>               
               </div>
-              <div id="gst-div" class="<?php if(old('type') == "1") {echo "hide";}?>">
-                <div class="row form-group gst-rate <?php if(old('type') == "1") {echo "hide";}?>">
+              <div id="gst-div" class="<?php if(old('type', '0') == "1") {echo "hide";}?>">
+                <div class="row form-group gst-rate <?php if(old('type', '0') == "1") {echo "hide";}?>">
                   <div class="col-md-3 col-md-offset-3">
                     <label for="gst-rate">GST(%) *</label>					
                       <input type="text" class="form-control" name="gst-rate" id="gst-rate" placeholder="GST (%)" onfocusout="splitRate()" value="{{ old('gst-rate') }}">
@@ -74,10 +74,10 @@
                   </div>
                 </div> -->
               </div>
-              <div class="row form-group fixed-cost <?php if(old('type')){if(old('type') == "0") {echo "hide";}} else {echo "hide"; }?>">
+              <div class="row form-group fixed-cost <?php if(old('type', '0') == "0") {echo "hide";}?>">
                 <div class="col-md-3 col-md-offset-3">
                   <label for="description">Amount *</label>					
-									<input type="text" class="form-control" name="amount" placeholder="Fixed medical team cost">
+									<input type="text" class="form-control" name="amount" placeholder="Fixed medical team cost" value="{{ old('amount') }}">
 									<span class="error-font text-danger">{{ $errors->first('amount') }}</span>
 								</div>   
               </div>       
@@ -110,52 +110,50 @@
     });
   </script>
   <script type="text/javascript">
-    $(document).ready(function(){
-    $('input[name=type]').on('ifClicked', function (event) { 
-      var type = this.value;
-      if(type == 1) {
-        // medical cost
-        $(".fixed-cost").removeClass("hide");
-        $("#gst-div").addClass("hide");
-      } else {
-        // gst
-        $(".fixed-cost").addClass("hide");
-        $("#gst-div").removeClass("hide");
+    $(document).ready(function () {
+      function toggleSettingType(type) {
+        if (type == "0") {
+          $("#gst-div").removeClass("hide");
+          $(".fixed-cost").addClass("hide");
+        } else if (type == "1") {
+          $("#gst-div").addClass("hide");
+          $(".fixed-cost").removeClass("hide");
+        }
       }
-    });
-    
-    $("#igst-check").on('ifChanged', function(event) {
-      if($("#igst-check").is(':checked')){ 
-        $(".igst").removeClass();
-        $("#igst-rate").removeClass();
-        $(".gst").addClass("hide");
-        $(".gst-rate").addClass("hide");
-      } else {
-      // gst
-      $(".fixed-cost").addClass("hide");
-      $(".gst").removeClass("hide");
-      $(".gst-rate").removeClass("hide");
-      $(".igst").addClass("hide");
-      $("#igst-rate").addClass("hide");
-    }
-  });
-    
-  $("#gst-rate").focusout(function(){
-    $(this).css("background-color", "#FFFFFF");
-  });  
-    
-    $("#is-percent").on('ifChanged', function(event) {
-      if($("#is-percent").is(':checked')){ 
-        $("#value-percentage").removeClass();
-        $("#value-fixed").addClass("hide");
-        $("#value-percentage").addClass("input-group-addon");
-      }
-      else{
-        $("#value-percentage").addClass("hide");
-        $("#value-fixed").removeClass();
-        $("#value-fixed").addClass("input-group-addon");
-      }
-    });
+
+      toggleSettingType($('input[name="type"]:checked').val() || "0");
+
+      $('input[name="type"]').on('ifChecked change', function () {
+        toggleSettingType($(this).val());
+      });
+
+      $("#igst-check").on('ifChanged change', function () {
+        if ($(this).is(':checked')) {
+          $(".gst").addClass("hide");
+          $(".gst-rate").addClass("hide");
+          $(".igst").removeClass("hide");
+          $("#igst-rate").removeClass("hide");
+        } else {
+          $(".gst").removeClass("hide");
+          $(".gst-rate").removeClass("hide");
+          $(".igst").addClass("hide");
+          $("#igst-rate").addClass("hide");
+        }
+      });
+
+      $("#gst-rate").on("focusout", function () {
+        $(this).css("background-color", "#FFFFFF");
+      });
+
+      $("#is-percent").on("ifChanged change", function () {
+        if ($(this).is(":checked")) {
+          $("#value-fixed").addClass("hide");
+          $("#value-percentage").removeClass("hide").addClass("input-group-addon");
+        } else {
+          $("#value-percentage").addClass("hide");
+          $("#value-fixed").removeClass("hide").addClass("input-group-addon");
+        }
+      });
     });
   </script>
   

@@ -341,8 +341,35 @@ class PlaneController extends Controller
   //Plane List
   public function getSearch(Request $request)
   {  
-		$validation_errors = array();
-    $request_data = $request->all(); 
+    $request_data = array_merge([
+			'departure' => 0,
+			'arrival' => 0,
+			'dep-latitude' => '',
+			'dep-longitude' => '',
+			'arr-latitude' => '',
+			'arr-longitude' => '',
+			'adults' => '',
+			'round-adults' => '',
+			'date' => '',
+			'round-date' => '',
+			'helicopter-departure' => '',
+			'helicopter-arrival' => '',
+			'multi-departure' => array(),
+			'multi-arrival' => array(),
+			'dep-multi-latitude' => array(),
+			'dep-multi-longitude' => array(),
+			'arr-multi-latitude' => array(),
+			'arr-multi-longitude' => array(),
+			'helicopter-multi-departure' => array(),
+			'helicopter-multi-arrival' => array(),
+			'multi-adults' => array(),
+			'multi-date' => array(),
+		], $request->all()); 
+
+		if(isset($request_data['planes']) && (string)$request_data['planes'] === '3'){
+			$request_data['trips'] = 0;
+		}
+
     if(isset($request_data['flower-shower']) && $request_data['flower-shower'] == 1){
       //$from_date = $request_data['from-date'];
       //$to_date = $request_data['to-date'];
@@ -363,37 +390,21 @@ class PlaneController extends Controller
       ->with('plane_types', $plane_types);
     } else { 
 		
-			$validator_fail = false;
-			
-			if($request_data['trips'] != 2){
-				$validator = $this->plane_service->search_rules($request_data);
-				if($validator->fails()){
-					$validator_fail = true;
-				}
-			}
+			$validator = $this->plane_service->search_rules($request_data);
       
-      if($validator_fail)
+      if($validator->fails())
       {
         return redirect()->back()->withErrors($validator)->withInput();
-      } else if(($request_data['dep-longitude'] == "" || $request_data['dep-latitude'] == "") && $request_data['trips'] != 2) {
-        if($request_data['planes'] == 2) {
-          $error['helicopter-departure'] = 'Please select departure destination';
-        } else {
-          $error['departure'] = 'Please select departure airport';
-        }
-        return redirect()->back()->withErrors($error)->withInput();
-      } else if(($request_data['arr-longitude'] == "" || $request_data['arr-latitude'] == "") && $request_data['trips'] != 2) {
-        if($request_data['planes'] == 2) {
-          $error['helicopter-arrival'] = 'Please select arrival destination';
-        } else {
-          $error['arrival'] = 'Please select arrival airport';
-        }
-        return redirect()->back()->withErrors($error)->withInput();
       } else {
 				
 				$gt1 = 0; 
 				$gt2 = 0;
 				$gt = array();
+				$crew_handling = $this->airportCrewHandlingAmount($request_data['arrival']);
+				$crew_handlings = array();
+				foreach(Airport::pluck('crew_handling', 'id') as $airport_id => $amount){
+					$crew_handlings[$airport_id] = $this->normalizeCrewHandlingAmount($amount);
+				}
 				if($request_data['planes'] != 2){
 					$gt1 = (float) Airport::where('id',$request_data['departure'])->value('gt'); 
 					$gt2 = (float) Airport::where('id',$request_data['arrival'])->value('gt');
@@ -417,19 +428,6 @@ class PlaneController extends Controller
 				$helicopter_arrival = $request_data['helicopter-arrival'];
 				
 				if(isset($request_data['multi-departure'])){
-					//validations
-					
-					$validation_errors['multi-departure'] = array_keys( $request_data['multi-departure'], 0);
-					$validation_errors['multi-arrival'] = array_keys( $request_data['multi-arrival'], 0);
-					$validation_errors['dep-multi-latitude'] = array_keys( $request_data['dep-multi-latitude'], '');
-					$validation_errors['dep-multi-longitude'] = array_keys( $request_data['dep-multi-longitude'], '');
-					$validation_errors['arr-multi-latitude'] = array_keys( $request_data['arr-multi-latitude'], '');
-					$validation_errors['arr-multi-longitude'] = array_keys( $request_data['arr-multi-longitude'], '');
-					$validation_errors['helicopter-multi-departure'] = ($plane_type == 2 ? array_keys( $request_data['helicopter-multi-departure'], '') : array());
-					$validation_errors['helicopter-multi-arrival'] = ($plane_type == 2 ? array_keys( $request_data['helicopter-multi-arrival'], '') : array());
-					$validation_errors['multi-adults'] = array_keys( $request_data['multi-adults'], '');
-					$validation_errors['multi-date'] = array_keys( $request_data['multi-date'], '');
-					//dd($plane_type, $validation_errors,  $request_data['multi-arrival']);
 					$multi_departure = $request_data['multi-departure'];
 					$multi_arrival = $request_data['multi-arrival'];
 					$dep_multi_latitude = $request_data['dep-multi-latitude'];
@@ -472,6 +470,8 @@ class PlaneController extends Controller
 					->with('gt', $gt)
 					->with('gt1', $gt1)
 					->with('gt2', $gt2)
+					->with('crew_handling', $crew_handling)
+					->with('crew_handlings', $crew_handlings)
 					//->with('round_departure', $round_departure)
 					//->with('round_arrival', $round_arrival)
 					->with('dep_latitude', $dep_latitude)
@@ -682,6 +682,8 @@ class PlaneController extends Controller
 
       $current_date = date("Y-m-d");
       $tax_details = DB::table('setting')
+      ->where('setting_type', 0)
+      ->where('status', 1)
       ->whereDate('from_date', '<=',  $current_date)
       ->whereDate('to_date', '>', $current_date)
       ->first();
@@ -773,10 +775,8 @@ class PlaneController extends Controller
       //$cost = ($distance / $avail_planes[$i]->speed) * $avail_planes[$i]->price_per_hour;
       $plane_details->path = $path;
       $plane_details->handling_charges = $handling_charges_amount;
-			$plane_details->tax = 0;
-			if(isset($tax_details)){
-				$plane_details->tax = $tax_details->gst;
-			}
+      $plane_details->medical_cost = $this->medicalCostAmount($avail_planes[$i]->type_id);
+			$plane_details->tax = $this->gstRateAmount($tax_details);
       $plane_details->trip_type = $trip_type;
 			$plane_details->departure_city_id = 0;
 			if($plane_type != 2){
@@ -825,6 +825,8 @@ class PlaneController extends Controller
 		$dep_first_lat = $request_data['dep-multi-latitude'][$first_index];
 		$dep_first_lng = $request_data['dep-multi-longitude'][$first_index];
 		$tax_details = DB::table('setting')
+      ->where('setting_type', 0)
+      ->where('status', 1)
       ->whereDate('from_date', '<=',  date('Y-m-d'))
       ->whereDate('to_date', '>', date('Y-m-d'))
       ->first();
@@ -1062,10 +1064,8 @@ class PlaneController extends Controller
 			
       $plane_details->speed_coefficient = $avail_planes[$i]->speed_coefficient;
       $plane_details->handling_charges = $handling_charges_amount;
-			$plane_details->tax = 0;
-			if(isset($tax_details)){
-				$plane_details->tax = $tax_details->gst;
-			}
+      $plane_details->medical_cost = $this->medicalCostAmount($avail_planes[$i]->type_id);
+			$plane_details->tax = $this->gstRateAmount($tax_details);
       $plane_details->trip_type = 2;
 			$plane_details->departure_city_id = 0;
 			if($request_data['plane-type'] != 2 && isset($departure_details)){
@@ -1092,6 +1092,7 @@ class PlaneController extends Controller
     $plane_types = DB::Table('plane_type')->pluck('name','id');
     $airports = Airport::where('status',1)->orderBy('updated_at')->get();
     $plane = Plane::find($request_data['plane-id']);
+		$medical_cost = $this->medicalCostAmount($plane->type_id);
 		if($plane->type_id == 2){
 			if(	$plane->from_date <= date('Y-m-d', strtotime($request_data['date'])) && $plane->to_date >= date('Y-m-d', strtotime($request_data['date']))){
 				if($plane->temporary_city_id != 0){
@@ -1153,8 +1154,43 @@ class PlaneController extends Controller
 		
 		$arrival_airport = Airport::find($arrival); 
 		$departure_airport = Airport::find($departure);
+		$crew_handling_rate = $this->airportCrewHandlingAmount($arrival);
 		
     $cities = City::get()->keyBy('id');
+		$route_debug = [];
+		$route_debug_entry = function($label, $from_lat, $from_lng, $to_lat, $to_lng, $request_distance) use ($routes_data) {
+			$key = $from_lat.'-'.$from_lng;
+			$route = isset($routes_data[$key]) ? $routes_data[$key] : null;
+			$matched = false;
+
+			if($route) {
+				$matched = ((string) $route->location_2_latitude === (string) $to_lat && (string) $route->location_2_longitude === (string) $to_lng);
+			}
+
+			return [
+				'label' => $label,
+				'lookup_key' => $key,
+				'target_latitude' => $to_lat,
+				'target_longitude' => $to_lng,
+				'route_found_for_from_location' => (bool) $route,
+				'route_target_latitude' => $route ? $route->location_2_latitude : null,
+				'route_target_longitude' => $route ? $route->location_2_longitude : null,
+				'route_matched' => $matched,
+				'manual_time_minutes' => $matched ? $route->time : null,
+				'manual_distance_nm' => $matched ? $route->distance : null,
+				'request_distance_nm' => $request_distance,
+				'distance_source' => ($matched && $route->distance > 0) ? 'manual route distance' : 'geometry distance',
+				'time_source' => $matched ? 'manual route time' : 'geometry + speed time',
+			];
+		};
+
+		if($plane_type != 2 && $departure_airport && $arrival_airport){
+			$route_debug[] = $route_debug_entry('base_to_departure', $plane->latitude, $plane->longitude, $departure_airport->latitude, $departure_airport->longitude, $plane_distance);
+			$route_debug[] = $route_debug_entry('departure_to_base', $departure_airport->latitude, $departure_airport->longitude, $plane->latitude, $plane->longitude, $request_data['plane-distance']);
+			$route_debug[] = $route_debug_entry('departure_to_arrival', $departure_airport->latitude, $departure_airport->longitude, $arrival_airport->latitude, $arrival_airport->longitude, $travel_distance);
+			$route_debug[] = $route_debug_entry('arrival_to_departure', $arrival_airport->latitude, $arrival_airport->longitude, $departure_airport->latitude, $departure_airport->longitude, $request_data['travel-distance']);
+			$route_debug[] = $route_debug_entry('arrival_to_base', $arrival_airport->latitude, $arrival_airport->longitude, $plane->latitude, $plane->longitude, $plane_single_distance);
+		}
 		//$path = $cities[$departure_airport->city_id]->name.' > '.$cities[$arrival_airport->city_id]->name.' > '.$cities[$departure_airport->city_id]->name;
 		//$distance = $this->getDistance($departure_airport->latitude, $departure_airport->longitude, $arrival_airport->latitude, $arrival_airport->longitude);
 		
@@ -1414,7 +1450,7 @@ class PlaneController extends Controller
 		}
 		
 		if($trip_type == 1){
-			$crew_handling = 25000 * $request_data['crew-additional-days'];
+			$crew_handling = $crew_handling_rate * (float)($request_data['crew-additional-days'] ?? 0);
 		}
 		//$additional_cost += $plane->price_per_hour * 2 * $request_data['additional-days'];
 		
@@ -1783,11 +1819,13 @@ if ($settings && isset($settings->value)) {
     return view('plane_details')
 			->with('points',$points)
 			->with('flights',$flights)
+			->with('route_debug',$route_debug)
 			->with('additional_cost',$additional_cost)
 			->with('additional_days',$request_data['additional-days'])
 			->with('owner_details',$owner_details)
 			->with('ground_handling',$ground_handling)
 			->with('crew_handling',$crew_handling)
+			->with('medical_cost',$medical_cost)
 			->with('total_flying_cost',$total_flying_cost)
 			->with('plane_images',$plane_images)
 			->with('airports',$airports)
@@ -1841,6 +1879,7 @@ if ($settings && isset($settings->value)) {
     $plane_images = PlaneImage::where('plane_id',$request_data['plane-id'])->get();
 		$ground_handling = $request_data["ground_handling"];
 		$flight_cost = $request_data["flight_cost"];
+		$medical_cost = $this->medicalCostAmount($plane->type_id);
 		$additional_cost = $crew_handling = $total_hours = $total_mins = 0;
 		$flights = array();
 		//dd($request_data);
@@ -1907,7 +1946,8 @@ if ($settings && isset($settings->value)) {
 						}
 						
 						if(isset($json_data->crew_handling_additional_days)){
-							$crew_handling += 25000 * $json_data->crew_handling_additional_days;
+							$crew_handling_airport_id = isset($request_data["arrival"][$previous_index]) ? $request_data["arrival"][$previous_index] : 0;
+							$crew_handling += $this->airportCrewHandlingAmount($crew_handling_airport_id) * (float) $json_data->crew_handling_additional_days;
 						}
 					}
 				}
@@ -2016,6 +2056,7 @@ if ($settings && isset($settings->value)) {
 			->with('additional_days',$additional_days)
 			->with('ground_handling',$ground_handling)
 			->with('crew_handling',$crew_handling)
+			->with('medical_cost',$medical_cost)
 			->with('plane_images',$plane_images)
 			->with('total_hours',$total_hours)
 			->with('total_mins',$total_mins)
@@ -2316,6 +2357,10 @@ if ($settings && isset($settings->value)) {
     $total_flying_cost = $request_data['total-flying-cost'];
     $ground_handling = $request_data['ground-handling'];
     $crew_handling = $request_data['crew-handling'];
+    $medical_cost = isset($request_data['medical-cost']) ? (float) $request_data['medical-cost'] : $this->medicalCostAmount($plane_type);
+    if((int) $plane_type !== 3) {
+      $medical_cost = 0;
+    }
     $flights = json_decode($request_data['flights']);
 		$all_flights = (array)$flights;
 		$flights = array();
@@ -2330,8 +2375,10 @@ if ($settings && isset($settings->value)) {
 		if(isset($all_flights['arr'])){
 			$flights[] = $all_flights['arr'];
 		}
-    $sub_total = $total_flying_cost + $ground_handling + $crew_handling; 
+    $sub_total = $total_flying_cost + $ground_handling + $crew_handling + $medical_cost; 
 		$tax_details = DB::table('setting')
+      ->where('setting_type', 0)
+      ->where('status', 1)
       ->whereDate('from_date', '<=',  date('Y-m-d'))
       ->whereDate('to_date', '>', date('Y-m-d'))
       ->first();
@@ -2352,6 +2399,7 @@ if ($settings && isset($settings->value)) {
       $total_flying_cost,
       $ground_handling,
       $crew_handling,
+      $medical_cost,
       $flights,
       $sub_total,
       $gst,
@@ -2431,7 +2479,7 @@ if ($settings && isset($settings->value)) {
       return response()->json([]);
     }
 
-    $airports = Airport::select('id', 'name', 'latitude', 'longitude', 'city_id', 'gt')
+    $airports = Airport::select('id', 'name', 'latitude', 'longitude', 'city_id', 'gt', 'crew_handling')
       ->where('status',1)
       ->where('city_id', $city_id)
       ->orderBy('name')
@@ -2468,6 +2516,66 @@ if ($settings && isset($settings->value)) {
       return response()->json(null, 401);
     }
   } 
+
+  private function airportCrewHandlingAmount($airport_id, $default = 25000)
+  {
+    $amount = null;
+
+    if($airport_id){
+      $amount = Airport::where('id', $airport_id)->value('crew_handling');
+    }
+
+    return $this->normalizeCrewHandlingAmount($amount, $default);
+  }
+
+  private function medicalCostAmount($plane_type, $default = 40000)
+  {
+    if((int) $plane_type !== 3){
+      return 0;
+    }
+
+    $setting = DB::table('setting')
+      ->where('setting_type', 1)
+      ->where('status', 1)
+      ->whereDate('from_date', '<=', date('Y-m-d'))
+      ->whereDate('to_date', '>', date('Y-m-d'))
+      ->orderBy('created_at', 'desc')
+      ->first();
+
+    if($setting && is_numeric($setting->amount)){
+      return (float) $setting->amount;
+    }
+
+    return (float) $default;
+  }
+
+  private function normalizeCrewHandlingAmount($amount, $default = 25000)
+  {
+    if(is_numeric($amount) && (float) $amount >= 0){
+      return (float) $amount;
+    }
+
+    return (float) $default;
+  }
+
+  private function gstRateAmount($tax_details = null, $default = 18)
+  {
+    if($tax_details && isset($tax_details->gst) && is_numeric($tax_details->gst) && (float) $tax_details->gst > 0){
+      return (float) $tax_details->gst;
+    }
+
+    $setting = DB::table('setting')
+      ->where('setting_type', 0)
+      ->where('status', 1)
+      ->orderBy('updated_at', 'desc')
+      ->first();
+
+    if($setting && isset($setting->gst) && is_numeric($setting->gst) && (float) $setting->gst > 0){
+      return (float) $setting->gst;
+    }
+
+    return (float) $default;
+  }
 
   private function subtypeFilterIds($value)
   {

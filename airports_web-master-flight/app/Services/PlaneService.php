@@ -199,26 +199,184 @@ class PlaneService
   
   // edit Plane rules
 	public function search_rules(array $data){
+		$trip = isset($data['trips']) ? (string) $data['trips'] : '';
+		$plane_type = isset($data['planes']) ? (string) $data['planes'] : '';
 		$messages = [
 			'planes.required' => 'Select machine type.',
 			'planes.not_in' => 'Select machine type.',
 			'trips.required' => 'Select trip.',
+			'trips.in' => 'Select trip.',
 			'adults.required' => 'Please enter no. of adults.',
+			'adults.numeric' => 'Please enter valid no. of adults.',
+			'adults.min' => 'Please enter valid no. of adults.',
+			'date.required' => 'Please select departure date.',
 			'departure.required' => 'Select departure airport.',
 			'departure.not_in' => 'Select departure airport.',
 			'arrival.required' => 'Select arrival airport.',
-			'arrival.not_in' => 'Select arrival airport.'
+			'arrival.not_in' => 'Select arrival airport.',
+			'helicopter-departure.required' => 'Please select departure destination.',
+			'helicopter-arrival.required' => 'Please select arrival destination.',
+			'round-date.required' => 'Please select return date.',
+			'round-adults.numeric' => 'Please enter valid no. of adults.',
+			'round-adults.min' => 'Please enter valid no. of adults.',
+			'multi-departure.required' => 'Please add at least one trip.',
+			'multi-arrival.required' => 'Please add at least one trip.',
+			'dep-multi-latitude.required' => 'Please select departure airport.',
+			'dep-multi-longitude.required' => 'Please select departure airport.',
+			'arr-multi-latitude.required' => 'Please select arrival airport.',
+			'arr-multi-longitude.required' => 'Please select arrival airport.',
+			'multi-adults.required' => 'Please add at least one trip.',
+			'multi-date.required' => 'Please add at least one trip.',
 		];
-    
 
-		$validator = Validator::make($data, [
+		$rules = [
 			'planes' => 'required|not_in:0',
-			'trips' => 'required',
-			'adults' => 'required',
-			'departure' => 'required_if:planes,1|required_if:planes,3',
-			'arrival' => 'required_if:planes,1|required_if:planes,3'
-		], $messages);
+			'trips' => 'required|in:0,1,2',
+		];
+
+		if($trip == '2'){
+			$rules = array_merge($rules, [
+				'multi-departure' => 'required|array|min:1',
+				'multi-arrival' => 'required|array|min:1',
+				'dep-multi-latitude' => 'required|array|min:1',
+				'dep-multi-longitude' => 'required|array|min:1',
+				'arr-multi-latitude' => 'required|array|min:1',
+				'arr-multi-longitude' => 'required|array|min:1',
+				'multi-adults' => 'required|array|min:1',
+				'multi-date' => 'required|array|min:1',
+			]);
+		} else {
+			$rules = array_merge($rules, [
+				'adults' => 'required|numeric|min:1',
+				'date' => 'required',
+			]);
+
+			if($plane_type == '2'){
+				$rules['helicopter-departure'] = 'required';
+				$rules['helicopter-arrival'] = 'required';
+			} else {
+				$rules['departure'] = 'required|not_in:0';
+				$rules['arrival'] = 'required|not_in:0';
+			}
+
+			if($trip == '1'){
+				$rules['round-date'] = 'required';
+				$rules['round-adults'] = 'nullable|numeric|min:1';
+			}
+		}
+
+		$validator = Validator::make($data, $rules, $messages);
+		$validator->after(function($validator) use ($data, $trip, $plane_type) {
+			if($trip == '2'){
+				$this->validateMultiTripSearch($validator, $data, $plane_type);
+				return;
+			}
+
+			if($trip == '0' || $trip == '1'){
+				$this->validateSingleOrRoundSearch($validator, $data, $plane_type);
+			}
+		});
+
 		return $validator;
+	}
+
+	private function validateSingleOrRoundSearch($validator, array $data, $plane_type)
+	{
+		if($plane_type == '2'){
+			if($this->isPlaceholderValue($this->inputValue($data, ['helicopter-departure'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['dep-latitude'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['dep-longitude']))){
+				$validator->errors()->add('helicopter-departure', 'Please select departure destination.');
+			}
+
+			if($this->isPlaceholderValue($this->inputValue($data, ['helicopter-arrival'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['arr-latitude'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['arr-longitude']))){
+				$validator->errors()->add('helicopter-arrival', 'Please select arrival destination.');
+			}
+
+			return;
+		}
+
+		if(!$this->hasSearchCoordinate($this->inputValue($data, ['dep-latitude'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['dep-longitude']))){
+			$validator->errors()->add('departure', 'Please select departure airport.');
+		}
+
+		if(!$this->hasSearchCoordinate($this->inputValue($data, ['arr-latitude'])) || !$this->hasSearchCoordinate($this->inputValue($data, ['arr-longitude']))){
+			$validator->errors()->add('arrival', 'Please select arrival airport.');
+		}
+	}
+
+	private function validateMultiTripSearch($validator, array $data, $plane_type)
+	{
+		$departures = $this->arrayValue($data, 'multi-departure');
+		$arrivals = $this->arrayValue($data, 'multi-arrival');
+		$dep_latitudes = $this->arrayValue($data, 'dep-multi-latitude');
+		$dep_longitudes = $this->arrayValue($data, 'dep-multi-longitude');
+		$arr_latitudes = $this->arrayValue($data, 'arr-multi-latitude');
+		$arr_longitudes = $this->arrayValue($data, 'arr-multi-longitude');
+		$helicopter_departures = $this->arrayValue($data, 'helicopter-multi-departure');
+		$helicopter_arrivals = $this->arrayValue($data, 'helicopter-multi-arrival');
+		$adults = $this->arrayValue($data, 'multi-adults');
+		$dates = $this->arrayValue($data, 'multi-date');
+
+		$indexes = array_unique(array_merge(
+			array_keys($departures),
+			array_keys($arrivals),
+			array_keys($dep_latitudes),
+			array_keys($dep_longitudes),
+			array_keys($arr_latitudes),
+			array_keys($arr_longitudes),
+			array_keys($adults),
+			array_keys($dates)
+		));
+
+		sort($indexes);
+
+		if(count($indexes) == 0){
+			$validator->errors()->add('multi-departure', 'Please add at least one trip.');
+			return;
+		}
+
+		foreach($indexes as $index){
+			if($plane_type == '2'){
+				if($this->isPlaceholderValue($helicopter_departures[$index] ?? '') || !$this->hasSearchCoordinate($dep_latitudes[$index] ?? '') || !$this->hasSearchCoordinate($dep_longitudes[$index] ?? '')){
+					$validator->errors()->add('helicopter-multi-departure.'.$index, 'Please select departure destination.');
+				}
+
+				if($this->isPlaceholderValue($helicopter_arrivals[$index] ?? '') || !$this->hasSearchCoordinate($arr_latitudes[$index] ?? '') || !$this->hasSearchCoordinate($arr_longitudes[$index] ?? '')){
+					$validator->errors()->add('helicopter-multi-arrival.'.$index, 'Please select arrival destination.');
+				}
+			} else {
+				if(!isset($departures[$index]) || $departures[$index] == '' || $departures[$index] == 0 || !$this->hasSearchCoordinate($dep_latitudes[$index] ?? '') || !$this->hasSearchCoordinate($dep_longitudes[$index] ?? '')){
+					$validator->errors()->add('multi-departure.'.$index, 'Please select departure airport.');
+				}
+
+				if(!isset($arrivals[$index]) || $arrivals[$index] == '' || $arrivals[$index] == 0 || !$this->hasSearchCoordinate($arr_latitudes[$index] ?? '') || !$this->hasSearchCoordinate($arr_longitudes[$index] ?? '')){
+					$validator->errors()->add('multi-arrival.'.$index, 'Please select arrival airport.');
+				}
+			}
+
+			if(!isset($adults[$index]) || $adults[$index] === '' || !is_numeric($adults[$index]) || $adults[$index] < 1){
+				$validator->errors()->add('multi-adults.'.$index, 'Please enter valid no. of adults.');
+			}
+
+			if(!isset($dates[$index]) || trim((string) $dates[$index]) == ''){
+				$validator->errors()->add('multi-date.'.$index, 'Please select departure date.');
+			}
+		}
+	}
+
+	private function arrayValue(array $data, $key)
+	{
+		return isset($data[$key]) && is_array($data[$key]) ? $data[$key] : [];
+	}
+
+	private function hasSearchCoordinate($value)
+	{
+		return trim((string) $value) !== '';
+	}
+
+	private function isPlaceholderValue($value)
+	{
+		$value = trim((string) $value);
+		return $value == '' || strtolower($value) == 'select from map';
 	}
   
   public function addOwner(array $request_data){

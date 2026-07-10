@@ -15,10 +15,10 @@
                 <div class="col-md-6 col-md-offset-3">         
                   <label for="status">Type *</label><br>
                   <label class="radio-inline">
-                    <input id="type-1" type="radio" class="minimal status" name="type" value="0"<?php if($setting->setting_type == "0") {echo "checked";}?> checked>&nbsp;GST
+                    <input id="type-1" type="radio" class="minimal status" name="type" value="0"<?php if(old('type', $setting->setting_type) == "0") {echo "checked";}?> disabled>&nbsp;GST
                   </label>
                   <label class="radio-inline">
-                    <input id="type-2" type="radio" class="minimal status" name="type" value="1"<?php if($setting->setting_type == "1") {echo "checked";}?>>&nbsp;Fixed medical team cost 
+                    <input id="type-2" type="radio" class="minimal status" name="type" value="1"<?php if(old('type', $setting->setting_type) == "1") {echo "checked";}?> disabled>&nbsp;Fixed medical team cost 
                   </label>
                 </div>
               </div>
@@ -34,14 +34,14 @@
 									<span class="error-font text-danger">{{ $errors->first('to-date') }}</span>
 								</div>               
               </div>
-              <div class="row form-group gst-rate <?php if(old('type') == "1") {echo "hide";}?>">
+              <div class="row form-group gst-rate <?php if(old('type', $setting->setting_type) == "1") {echo "hide";}?>">
                 <div class="col-md-3 col-md-offset-3">
                   <label for="gst-rate">GST(%) *</label>					
 										<input type="text" class="form-control" name="gst-rate" id="gst-rate" value="{{ $setting-> gst }}" onfocusout="splitRate()" value="{{ old('gst-rate') }}" disabled>
 									<span class="error-font text-danger">{{ $errors->first('gst-rate') }}</span>
 								</div> 
               </div>  
-              <div class="row form-group gst <?php if(old('type') == "1") {echo "hide";}?>">
+              <div class="row form-group gst <?php if(old('type', $setting->setting_type) == "1") {echo "hide";}?>">
                 <div class="col-md-3 col-md-offset-3">
                   <label for="description">CGST(%) *</label>					
 										<input type="text" class="form-control" name="cgst" id="cgst" value="{{ $setting-> cgst }}" readonly>
@@ -53,8 +53,8 @@
 									<span class="error-font text-danger">{{ $errors->first('sgst') }}</span>
 								</div>  
               </div>  
-              <div class="row form-group igst <?php if(old('type') == "1") {echo "hide";}?>">
-                <div class="col-md-3 col-md-offset-3 <?php if(old('type') == "1") {echo "hide";}?>">
+              <div class="row form-group igst <?php if(old('type', $setting->setting_type) == "1") {echo "hide";}?>">
+                <div class="col-md-3 col-md-offset-3 <?php if(old('type', $setting->setting_type) == "1") {echo "hide";}?>">
                   <input type="checkbox" id="igst-check" class="" name="igst-check" value="<?php if(($setting-> igst) != "0" ) {echo "checked";}?>" <?php if(($setting-> igst) != "0" ) {echo "checked";}?> disabled> &nbsp; &nbsp; &nbsp; &nbsp;
                   <label for="igst">IGST</label>
                 </div> 
@@ -63,7 +63,7 @@
 									<span class="error-font text-danger">{{ $errors->first('igst-rate') }}</span>
 								</div>
               </div>  
-              <div class="row form-group fixed-cost <?php if(old('type')){if(old('type') == "0") {echo "hide";}} else {echo "hide"; }?>">
+              <div class="row form-group fixed-cost <?php if(old('type', $setting->setting_type) == "0") {echo "hide";}?>">
                 <div class="col-md-3 col-md-offset-3">
                   <label for="description">Amount *</label>					
 									<input type="text" class="form-control" name="amount" value="{{ $setting-> amount }}" disabled>

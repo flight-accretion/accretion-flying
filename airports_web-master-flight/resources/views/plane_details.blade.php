@@ -232,27 +232,32 @@
 											</tr>
 										</thead>
 										<tbody>
+                      <?php
+                        $display_total_hours = $total_hours;
+                        $display_total_mins = $total_mins;
+                        $fuel_hault = 0;
+                        $fuel_cost = 0;
+
+                        if(isset($plane_type) && $plane_type == 2){
+                          $flight_minutes_for_hault = ((int)$total_hours * 60) + (int)$total_mins;
+                          $remaining_minutes_for_hault = $flight_minutes_for_hault;
+
+                          while($remaining_minutes_for_hault > 90){
+                            $fuel_hault += 30;
+                            $remaining_minutes_for_hault -= 90;
+                          }
+
+                          $fuel_cost = ($fuel_hault/60) *  $plane->price_per_hour;
+                          $final_total_minutes = $flight_minutes_for_hault + $fuel_hault;
+                          $display_total_hours = floor($final_total_minutes / 60);
+                          $display_total_mins = $final_total_minutes % 60;
+                        }
+                      ?>
 											<tr>
 												<td>Total Flight Time</td>
-												<td class="text-right">{{ $total_hours }} Hrs {{ $total_mins }} Mins</td>
+												<td class="text-right">{{ $display_total_hours }} Hrs {{ $display_total_mins }} Mins</td>
 											</tr>
                       @if(isset($plane_type) && $plane_type==2)
-                      <?php
-                        $minutes = ( $total_hours != 0 ? $total_hours*60 : 0) + ($total_mins != 0 ? $total_mins :0);  
-                        $fuel_hault = 0;
-                      ?>
-                      @while ($minutes>90) 
-                        <?php
-                        $fuel_hault += 30;
-                        $minutes -= 90; 
-                        ?> 
-                      @endwhile
-                      <?php
-                        $fuel_cost = ($fuel_hault/60) *  $plane->price_per_hour  ;
-                        $final_total_minutes = ($total_hours * 60) + $total_mins + $fuel_hault;
-                        $final_total_hours = floor($final_total_minutes / 60);
-                        $final_total_mins  = $final_total_minutes % 60;
-                      ?>
                     <tr>
                       <td>Fuel Hault</td>
                       <td class="text-right">{{ (int)($fuel_hault/60) }} Hrs {{ (int)$fuel_hault%60 }} Mins</td>
@@ -260,8 +265,8 @@
                    
                     @endif
  											<?php 
-												$flying_hours = $total_hours;
-												$flying_mins = $total_mins;
+												$flying_hours = $display_total_hours;
+												$flying_mins = $display_total_mins;
 											?>
 											@if(($stay_time_hours + $stay_time_minutes) != 0)
                         <tr>
@@ -269,7 +274,7 @@
                           <td class="text-right">{{ $stay_time_hours }} Hrs {{ $stay_time_minutes }} Mins</td>
                         </tr>
                         <?php 
-                          $total_billing_minutes = ($stay_time_hours + $total_hours)*60 + $total_mins + $stay_time_minutes ;
+                          $total_billing_minutes = ($stay_time_hours + $display_total_hours)*60 + $display_total_mins + $stay_time_minutes ;
                           $total_hours = $billing_hours = floor($total_billing_minutes / 60);
                           $total_mins = $billing_minutes = ($total_billing_minutes % 60);
                         ?>
@@ -297,29 +302,35 @@
 												<td>Crew Handling</td>
 												<td class="text-right">{{ round($crew_handling) }}</td>
 											</tr>
+											@if($plane->type_id == 3 && $medical_cost > 0)
+												<tr>
+													<td>Fixed Medical Team Cost</td>
+													<td class="text-right">{{ round($medical_cost) }}</td>
+												</tr>
+											@endif
 											<tr>
 												<td>Other Charges</td>
 												<td class="text-right">As per actual</td>
 											</tr>
 											<tr>
 												<td>Sub Total</td>  
-												<td class="text-right">{{ round($total_flying_cost + $ground_handling + $crew_handling) }}</td>
+												<td class="text-right">{{ round($total_flying_cost + $ground_handling + $crew_handling + $medical_cost) }}</td>
 											</tr>
 											@if($plane->type_id != 3)
 												<tr>
 													<td>GST @ 18%</td>
-													<td class="text-right">{{ round((($total_flying_cost + $ground_handling + $crew_handling ) * 18/100),2) }}</td>
+													<td class="text-right">{{ round((($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100),2) }}</td>
 												</tr>
 												<tr>
 													<td>Grand Total</td>
-													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling + (($total_flying_cost + $ground_handling + $crew_handling ) * 18/100))); ?>
-													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling + (($total_flying_cost + $ground_handling + $crew_handling ) * 18/100)))}}</td>
+													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost + (($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100))); ?>
+													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost + (($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100)))}}</td>
 												</tr>
 											@else
 												<tr>
 													<td>Grand Total</td>
-													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling )); ?>
-													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling ))}}</td>
+													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost )); ?>
+													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ))}}</td>
 												</tr>
 											@endif
 										</tbody>
@@ -373,11 +384,12 @@
              <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
              <input id="plane-id" type="hidden" name="plane-id" value="{{ $plane->id }}" />
              <input id="plane-name" type="hidden" name="plane-name" value="{{ $plane->name }}" />
-             <input id="total-hours" type="hidden" name="total-hours" value="{{ $total_hours }}" />
-             <input id="total-mins" type="hidden" name="total-mins" value="{{ $total_mins }}" />
+             <input id="total-hours" type="hidden" name="total-hours" value="{{ $display_total_hours }}" />
+             <input id="total-mins" type="hidden" name="total-mins" value="{{ $display_total_mins }}" />
              <input id="total-flying-cost" type="hidden" name="total-flying-cost" value="{{ $total_flying_cost }}" />
              <input id="ground-handling" type="hidden" name="ground-handling" value="{{ $ground_handling }}" />
              <input id="crew-handling" type="hidden" name="crew-handling" value="{{ $crew_handling }}" />
+             <input id="medical-cost" type="hidden" name="medical-cost" value="{{ $medical_cost }}" />
              <input id="flights" type="hidden" name="flights" value="{{ json_encode($flights) }}" />
           </form>
         </div>
@@ -476,6 +488,15 @@
   });
   
 </script>
+
+@if(config('app.debug'))
+<script>
+  // console.group('Flight calculation debug');
+  // console.log('Flights from backend', @json($flights));
+  // console.log('Route match debug', @json($route_debug ?? []));
+  console.groupEnd();
+</script>
+@endif
 
 <script>
   $(document).ready(function(){

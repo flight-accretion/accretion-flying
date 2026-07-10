@@ -98,7 +98,7 @@ class HandlingCharge extends Model
   {
     $amount = (float) $amount;
     $general_charge = self::saveGeneralCharge($amount);
-    self::whereNull('airport_id')->where('charges', '<', $amount)->update(['charges' => $amount]);
+    self::whereNull('airport_id')->where('charges', 0)->update(['charges' => $amount]);
     $airports = Airport::all();
 
     foreach($airports as $airport){
@@ -118,7 +118,7 @@ class HandlingCharge extends Model
         $charge->city_id = $airport->city_id;
         $charge->airport_id = $airport->id;
 
-        if($charge->charges < $amount){
+        if($charge->charges == 0){
           $charge->charges = $amount;
         }
 

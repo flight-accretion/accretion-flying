@@ -35,6 +35,11 @@
                   <span class="error-font text-danger">{{ $errors->first('charges')}}</span>
                 </div>
                 <div class="form-group col-md-3">
+                  <label>Crew Handling</label>
+                  <input type="text" class="form-control" id="crew_handling" placeholder="Enter Crew Handling Charge" name="crew_handling" value="{{ old('crew_handling', 25000) }}">
+                  <span class="error-font text-danger">{{ $errors->first('crew_handling')}}</span>
+                </div>
+                <div class="form-group col-md-3">
                   <label for="gt">Ground Time (In minutes)</label>
                   <input type="number" min="0" class="form-control" id="gt" placeholder="Enter ground time" name="gt" value="{{ old('gt', 10) }}">
                   <span class="error-font text-danger">{{ $errors->first('gt')}}</span>

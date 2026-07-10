@@ -75,6 +75,9 @@ class AirportSyncService
         $existing->state_name = $stateName;
         $existing->city_name = $cityName;
         $existing->country_name = $countryName;
+        if($existing->crew_handling === null || $existing->crew_handling === ''){
+          $existing->crew_handling = 25000;
+        }
         $existing->save();
         HandlingCharge::syncAirportCharge($existing);
         $updatedCount++;
@@ -91,6 +94,7 @@ class AirportSyncService
       $airport->state_name = $stateName;
       $airport->city_name = $cityName;
       $airport->country_name = $countryName;
+      $airport->crew_handling = 25000;
       $airport->status = 1;
       $airport->save();
 

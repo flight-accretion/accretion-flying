@@ -17,7 +17,9 @@ class AirportService
 			'longitude.required' => 'Please enter longitude.',
 			'gt.required' => 'Please enter ground time.',
 			'gt.integer' => 'Ground time should be in minutes.',
-			'gt.min' => 'Ground time cannot be negative.'
+			'gt.min' => 'Ground time cannot be negative.',
+			'crew_handling.numeric' => 'Crew handling should be a valid amount.',
+			'crew_handling.min' => 'Crew handling cannot be negative.'
 		];
 
 		$validator = Validator::make($data, [
@@ -25,7 +27,8 @@ class AirportService
 			'city' => 'required',
 			'latitude' => 'required',
 			'longitude' => 'required',
-			'gt' => 'required|integer|min:0'
+			'gt' => 'required|integer|min:0',
+			'crew_handling' => 'nullable|numeric|min:0'
 		], $messages);
     
 		return $validator;
@@ -43,6 +46,7 @@ class AirportService
     $obj_airport->open_time = date('0000-00-00 H:i', strtotime($request_data['open-time']));	
     $obj_airport->close_time = date('0000-00-00 H:i', strtotime($request_data['close-time'])); 
     $obj_airport->gt = isset($request_data['gt']) && $request_data['gt'] !== '' ? $request_data['gt'] : 10;
+    $obj_airport->crew_handling = isset($request_data['crew_handling']) && $request_data['crew_handling'] !== '' ? $request_data['crew_handling'] : 25000;
     $obj_airport->status = $request_data['status'];
     $obj_airport->save();
     HandlingCharge::syncAirportCharge($obj_airport, (isset($request_data['charges']) ? $request_data['charges'] : null));
@@ -57,7 +61,9 @@ class AirportService
 			'longitude.required' => 'Please select enter longitude.',
 			'gt.required' => 'Please enter ground time.',
 			'gt.integer' => 'Ground time should be in minutes.',
-			'gt.min' => 'Ground time cannot be negative.'
+			'gt.min' => 'Ground time cannot be negative.',
+			'crew_handling.numeric' => 'Crew handling should be a valid amount.',
+			'crew_handling.min' => 'Crew handling cannot be negative.'
 		];
     
 		$validator = Validator::make($data, [
@@ -66,6 +72,7 @@ class AirportService
 			'latitude' => 'required',
 			'longitude' => 'required',
 			'gt' => 'required|integer|min:0',
+			'crew_handling' => 'nullable|numeric|min:0',
 		], $messages);
     
 		return $validator;
@@ -83,6 +90,7 @@ class AirportService
 		$obj_airport->open_time = date('0000-00-00 H:i', strtotime($request_data['open-time']));	
 		$obj_airport->close_time = date('0000-00-00 H:i', strtotime($request_data['close-time']));	
 		$obj_airport->gt = isset($request_data['gt']) && $request_data['gt'] !== '' ? $request_data['gt'] : 10;
+		$obj_airport->crew_handling = isset($request_data['crew_handling']) && $request_data['crew_handling'] !== '' ? $request_data['crew_handling'] : 25000;
 		$obj_airport->status = $request_data['status'];
     $obj_airport->save();  
     HandlingCharge::syncAirportCharge($obj_airport, (isset($request_data['charges']) ? $request_data['charges'] : null));

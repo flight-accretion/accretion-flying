@@ -64,13 +64,6 @@ class SettingController extends Controller
 		$validator = $this->setting_service->add_setting_rules($request_data);
 		
     $type = isset($request_data['type']) ? $request_data['type'] : null;
-    $gst_rate = isset($request_data['gst-rate']) ? $request_data['gst-rate'] : '';
-    $igst_rate = isset($request_data['igst-rate']) ? $request_data['igst-rate'] : '';
-
-    if($type == 0 && $gst_rate == '' && $igst_rate == '')
-    {
-      return redirect()->back()->with('error', 'Please add either GST or IGST rate');
-    }
     
 		if($validator->fails())
 		{ 
@@ -80,9 +73,11 @@ class SettingController extends Controller
 		{
       $setting = 0;
       $setting += Setting::whereDate('from_date', '<=', date('Y-m-d', strtotime($request_data['from-date'])))
+        ->where('setting_type', $type)
         ->whereDate('to_date', '>=', date('Y-m-d', strtotime($request_data['from-date'])))
         ->count();
       $setting += Setting::whereDate('from_date', '<=', date('Y-m-d', strtotime($request_data['to-date'])))
+        ->where('setting_type', $type)
         ->whereDate('to_date', '>=', date('Y-m-d', strtotime($request_data['to-date'])))
         ->count();
       if($setting == 0){
@@ -144,13 +139,6 @@ class SettingController extends Controller
 		$validator = $this->setting_service->add_setting_rules($request_data);
     
     $type = isset($request_data['type']) ? $request_data['type'] : null;
-    $gst_rate = isset($request_data['gst-rate']) ? $request_data['gst-rate'] : '';
-    $igst_rate = isset($request_data['igst-rate']) ? $request_data['igst-rate'] : '';
-
-    if($type == 0 && $gst_rate == '' && $igst_rate == '')
-    {
-      return redirect()->back()->with('error', 'Please add either GST or IGST rate');
-    }
 		
 		if($validator->fails())
 		{ 

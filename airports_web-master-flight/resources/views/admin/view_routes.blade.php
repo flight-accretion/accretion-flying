@@ -18,7 +18,7 @@
                   <th>Plane</th>
                   <th>Time(In minutes)</th>
                   <!--th>Price</th-->
-                  <th>Distance(In NM)</th>
+                  <!-- <th>Distance(In NM)</th> -->
                   <th width="15%" class="text-center">Options</th>
                 </tr>
               </thead>
@@ -35,7 +35,7 @@
                       <td>-</td>
                     @endif
                     <td>{{ $route->time }}</td>
-                    <td>{{ $route->distance }}</td>
+                    <!-- <td>{{ $route->distance }}</td> -->
                     <!--td>{{ $route->price }}</td-->
                     <td width="15%" class="text-center">
                       <a href="/route/edit?route-id={{ $route->id }}" type="button" class="btn label label-primary">Edit</a>

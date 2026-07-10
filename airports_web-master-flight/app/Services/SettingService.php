@@ -13,14 +13,19 @@ class SettingService
 			'to-date.required' => 'Please enter to date.',
 			'from-date.required' => 'Please enter from date',
 			'amount.required' => 'Please enter amount',
+			'amount.numeric' => 'Please enter a valid amount',
+			'amount.min' => 'Amount cannot be negative',
+			'gst-rate.required_if' => 'Please enter GST rate',
+			'gst-rate.numeric' => 'Please enter a valid GST rate',
+			'gst-rate.min' => 'GST rate cannot be negative',
 		];
 
 		$validator = Validator::make($data, [
 			'type' => 'required|in:0,1',
-			'from-date' => 'required',
+      'from-date' => 'required',
       'to-date' => 'required|date|after:from-date',
-      'amount' => 'required_if:type,1',
-      //'gst-rate' => 'required_if:type, 0',
+      'amount' => 'required_if:type,1|nullable|numeric|min:0',
+      'gst-rate' => 'required_if:type,0|nullable|numeric|min:0',
       'igst-rate' => 'required_with:igst-check'
 		], $messages);
     

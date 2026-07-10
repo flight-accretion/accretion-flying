@@ -45,11 +45,11 @@
                   <input type="text" class="form-control" id="time" placeholder="Enter time" name="time" value="{{ old('time') }}">
                   <span class="error-font text-danger">{{ $errors->first('time')}}</span>
                 </div>
-                <div class="form-group col-md-4">
+                <!-- <div class="form-group col-md-4">
                   <label for="distance">Distance (In NM)</label>
                   <input type="text" class="form-control" id="distance" placeholder="Enter distance" name="distance" value="{{ old('distance') }}">
                   <span class="error-font text-danger">{{ $errors->first('distance')}}</span>
-                </div>
+                </div> -->
             
               </div>     
             </div>           

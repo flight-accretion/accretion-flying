@@ -26,6 +26,7 @@ class MachineDetailsExport implements FromArray, WithEvents, WithTitle
         protected $totalFlyingCost,
         protected $groundHandling,
         protected $crewHandling,
+        protected $medicalCost,
         protected array $flights,
         protected $subTotal,
         protected $gst,
@@ -109,7 +110,7 @@ class MachineDetailsExport implements FromArray, WithEvents, WithTitle
             ? ' [Base: ' . $this->planeCityText . ', Rate: ' . $this->price . ']'
             : ' [Rate: ' . $this->price . ']';
 
-        $this->addRow([$this->planeName . ' Details' . $planeCityRate], 16);
+        $this->addRow([$this->planeName ], 16);
         $this->addRow([]);
         $this->addRow(['Flight Details'], 14, true);
         $this->addRow(['Departure Time', 'Departure', 'Flight Time', 'Arrival', 'Arrival Time', 'Particular'], 12, false, true);
@@ -151,6 +152,9 @@ class MachineDetailsExport implements FromArray, WithEvents, WithTitle
         $this->addRow(['Flying Cost', ' ' . $this->totalFlyingCost]);
         $this->addRow(['Ground Handling', ' ' . $this->groundHandling]);
         $this->addRow(['Crew Handling', ' ' . $this->crewHandling]);
+        if ($this->planeType === 3 && $this->medicalCost > 0) {
+            $this->addRow(['Fixed Medical Team Cost', ' ' . $this->medicalCost]);
+        }
         $this->addRow(['Other Charges', 'As per actual']);
         $this->addRow(['Sub Total', ' ' . $this->subTotal]);
 

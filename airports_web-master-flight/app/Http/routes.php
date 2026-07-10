@@ -78,6 +78,12 @@ Route::get('/uploads/{path}', function ($path) {
     return response()->file($real_file_path, ['Cache-Control' => 'public, max-age=86400']);
   }
 
+  if(app()->environment('local')) {
+    $remote_uploads_url = rtrim(env('REMOTE_UPLOADS_URL', 'https://flights.airaccretion.com/uploads'), '/');
+    $remote_path = implode('/', array_map('rawurlencode', explode('/', str_replace('\\', '/', $path))));
+    return redirect()->away($remote_uploads_url . '/' . $remote_path);
+  }
+
   $placeholder = public_path('img/plane-2image.jpg');
   if(!is_file($placeholder)) {
     $placeholder = public_path('images/unknown.jpg');
