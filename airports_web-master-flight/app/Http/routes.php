@@ -79,7 +79,7 @@ Route::get('/uploads/{path}', function ($path) {
   }
 
   if(app()->environment('local')) {
-    $remote_uploads_url = rtrim(env('REMOTE_UPLOADS_URL', 'https://flights.airaccretion.com/uploads'), '/');
+    $remote_uploads_url = rtrim(env('REMOTE_UPLOADS_URL', 'https://fliying.airaccretion.com/uploads'), '/');
     $remote_path = implode('/', array_map('rawurlencode', explode('/', str_replace('\\', '/', $path))));
     return redirect()->away($remote_uploads_url . '/' . $remote_path);
   }
