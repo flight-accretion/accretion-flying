@@ -1,5 +1,13 @@
 @extends('layouts.plane_header')
 @section('content')
+	<style>
+		#trips option:disabled,
+		.select2-results__option[aria-disabled="true"] {
+			background: #d9d9d9 !important;
+			color: #777 !important;
+			cursor: not-allowed;
+		}
+	</style>
 	@if($trip_type == 2)
 		<style>
 			#plane-page-top header {
@@ -480,6 +488,7 @@
 		}
 		var crew_handlings = <?php echo json_encode(isset($crew_handlings) ? $crew_handlings : array()); ?>;
 		var plane_type = $('#planes').val()
+		var previous_plane_type = plane_type;
 		var trip_id = $('#trips').val();
 		var syncingMapSelectText = false;
 		function getCrewHandlingForAirport(airportId) {
@@ -530,6 +539,45 @@
 			$select.next('.select2-container').find('.select2-selection__rendered').attr('title', displayText).text(displayText);
 			$select.next('.select2-container').find('.select2-chosen').text(displayText);
 		}
+
+		function resetSearchSelect(selector) {
+			var $select = $(selector);
+			if(!$select.length) {
+				return;
+			}
+
+			$select.find('option[data-map-option="1"]').text('Select from map');
+			$select.val('').trigger('change.select2');
+
+			var placeholder = $.trim($select.find('option[value=""]').first().text() || '');
+			if(placeholder !== '') {
+				$select.next('.select2-container').find('.select2-selection__rendered').attr('title', placeholder).text(placeholder);
+				$select.next('.select2-container').find('.select2-chosen').text(placeholder);
+			}
+		}
+
+		function resetMachineDependentSearchState() {
+			$('.search-validation-error').remove();
+			$('.has-error').removeClass('has-error');
+			$('.map-select-option').text('Select from map');
+
+			resetSearchSelect('#departure');
+			resetSearchSelect('#plane-air-arrival');
+			resetSearchSelect('#plane-air-departure-round');
+			resetSearchSelect('#plane-air-arrival-round');
+			$('.plane-air-departure-multi, .plane-air-arrival-multi').each(function() {
+				resetSearchSelect('#' + this.id);
+			});
+
+			$('#dep-latitude, #dep-longitude, #arr-latitude, #arr-longitude, #dep-latitude-round, #dep-longitude-round').val('');
+			$('#dep-helicopter, #arr-helicopter').val('');
+			$('#helicopter-dep-round, #helicopter-arr-round').val('Select From Map');
+			$('[id^="dep-latitude-"], [id^="dep-longitude-"], [id^="arr-latitude-"], [id^="arr-longitude-"]').val('');
+			$('[id^="dep-helicopter-multi-"], [id^="arr-helicopter-multi-"]').val('Select From Map');
+			$('#lat, #long, #lat-drop, #long-drop, #lat-multi, #long-multi, #search-location, #search-location-drop, #search-location-multi').val('');
+			$('#plane-subtypes-filter').val(null).trigger('change.select2');
+		}
+
 		function getMapLocationText(searchSelector, lat, lng, fallbackText) {
 			var searchText = $.trim($(searchSelector).val() || '');
 			var latitude = $.trim(lat || '');
@@ -587,6 +635,40 @@
 			$('#multi-trip-div .delete-trip').closest('[class*="col-"]').removeClass('hide');
 			$('#multi-trip-div .helicopter-dep-multi input[type="text"], #multi-trip-div .helicopter-arr-multi input[type="text"]').prop('readonly', true);
 			setMapOptionAvailability();
+		}
+
+		function toggleTripSections(selectedTripId) {
+			if(selectedTripId == 0) {
+				$('#btn-search').removeClass('hide');
+				$('#btn-search-round').addClass('hide');
+				$('#round-trip').addClass('hide');
+				$('#non-multi-trip-div').removeClass('hide');
+				$('#multi-trip-div').addClass('hide');
+			} else if(selectedTripId == 1) {
+				$('#btn-search').addClass('hide');
+				$('#btn-search-round').removeClass('hide');
+				$('#round-trip').removeClass('hide');
+				$('#non-multi-trip-div').removeClass('hide');
+				$('#multi-trip-div').addClass('hide');
+			} else {
+				$('#non-multi-trip-div').addClass('hide');
+				$('#multi-trip-div').removeClass('hide');
+			}
+		}
+
+		function enforceAirAmbulanceTripSelection() {
+			var isAirAmbulance = String(plane_type) === '3';
+			$('#trips option[value="1"], #trips option[value="2"]').prop('disabled', isAirAmbulance);
+
+			if(isAirAmbulance && String($('#trips').val()) !== '0') {
+				trip_id = '0';
+				$('#trips').val('0');
+				toggleTripSections(trip_id);
+			} else {
+				trip_id = $('#trips').val();
+			}
+
+			$('#trips').trigger('change.select2');
 		}
 
 		function isSearchBlank(value) {
@@ -826,6 +908,7 @@
     //Initialize Select2 Elements
     $(".select2").select2();      
     setMapOptionAvailability();
+    enforceAirAmbulanceTripSelection();
     if(isHelicopterSearch()) {
       initializeMapSelectionsFromHidden();
     }
@@ -836,7 +919,14 @@
     });
     
 		$('#planes').change(function(){
-			plane_type = $("option:selected", this).data('id');
+			var selected_plane_type = $("option:selected", this).data('id') || $(this).val();
+			var machineTypeChanged = String(selected_plane_type) !== String(previous_plane_type);
+			plane_type = selected_plane_type;
+			if(machineTypeChanged) {
+				resetMachineDependentSearchState();
+			}
+			previous_plane_type = plane_type;
+			enforceAirAmbulanceTripSelection();
 			// plane_type values
 			// 1-plane, 2-helicopter, 3-air-ambulance
 			if(plane_type == 2){
@@ -1105,25 +1195,13 @@
       
 		$('#trips').change(function(){
 			trip_id = $(this).val();
+			if(String(plane_type) === '3' && trip_id !== '0') {
+				trip_id = '0';
+				$(this).val('0').trigger('change.select2');
+			}
 			// trip_id values
 			// 0-Single Trip, 1-Round Trip, 2-Multi Trip
-			if(trip_id == 0) {
-				$('#btn-search').removeClass('hide');
-				$('#btn-search-round').addClass('hide');
-				$('#round-trip').addClass('hide');
-				$('#non-multi-trip-div').removeClass('hide');
-				$('#multi-trip-div').addClass('hide');
-			} else if(trip_id == 1) {
-				$('#btn-search').addClass('hide');
-				$('#btn-search-round').removeClass('hide');  
-				$('#round-trip').removeClass('hide');
-				$('#non-multi-trip-div').removeClass('hide');
-				$('#multi-trip-div').addClass('hide');
-			}
-			else {
-				$('#non-multi-trip-div').addClass('hide');
-				$('#multi-trip-div').removeClass('hide');
-			}
+			toggleTripSections(trip_id);
 			$('#planes').change();
 		});
     

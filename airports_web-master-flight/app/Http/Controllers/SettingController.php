@@ -71,14 +71,16 @@ class SettingController extends Controller
 		}
 		else
 		{
+      $from_date = $this->setting_service->databaseDate($request_data['from-date']);
+      $to_date = $this->setting_service->databaseDate($request_data['to-date']);
       $setting = 0;
-      $setting += Setting::whereDate('from_date', '<=', date('Y-m-d', strtotime($request_data['from-date'])))
+      $setting += Setting::whereDate('from_date', '<=', $from_date)
         ->where('setting_type', $type)
-        ->whereDate('to_date', '>=', date('Y-m-d', strtotime($request_data['from-date'])))
+        ->whereDate('to_date', '>=', $from_date)
         ->count();
-      $setting += Setting::whereDate('from_date', '<=', date('Y-m-d', strtotime($request_data['to-date'])))
+      $setting += Setting::whereDate('from_date', '<=', $to_date)
         ->where('setting_type', $type)
-        ->whereDate('to_date', '>=', date('Y-m-d', strtotime($request_data['to-date'])))
+        ->whereDate('to_date', '>=', $to_date)
         ->count();
       if($setting == 0){
         $this->setting_service->addSetting($request_data); 

@@ -459,6 +459,43 @@
         $select.next('.select2-container').find('.select2-chosen').text(displayText);
       }
 
+      function resetSearchSelect(selector) {
+        var $select = $(selector);
+        if(!$select.length) {
+          return;
+        }
+
+        $select.find('option[data-map-option="1"]').text('Select from map');
+        $select.val('').trigger('change.select2');
+
+        var placeholder = $.trim($select.find('option[value=""]').first().text() || '');
+        if(placeholder !== '') {
+          $select.next('.select2-container').find('.select2-selection__rendered').attr('title', placeholder).text(placeholder);
+          $select.next('.select2-container').find('.select2-chosen').text(placeholder);
+        }
+      }
+
+      function resetMachineDependentSearchState() {
+        $('.search-validation-error').remove();
+        $('.has-error').removeClass('has-error');
+        $('.map-select-option').text('Select from map');
+
+        resetSearchSelect('#plane-air-departure');
+        resetSearchSelect('#plane-air-arrival');
+        resetSearchSelect('#plane-air-departure-round');
+        resetSearchSelect('#plane-air-arrival-round');
+        $('.plane-air-departure-multi, .plane-air-arrival-multi').each(function() {
+          resetSearchSelect('#' + this.id);
+        });
+
+        $('#dep-latitude, #dep-longitude, #arr-latitude, #arr-longitude, #dep-latitude-round, #dep-longitude-round').val('');
+        $('#dep-helicopter, #arr-helicopter').val('');
+        $('#helicopter-dep-round, #helicopter-arr-round').val('Select From Map');
+        $('[id^="dep-latitude-"], [id^="dep-longitude-"], [id^="arr-latitude-"], [id^="arr-longitude-"]').val('');
+        $('[id^="dep-helicopter-multi-"], [id^="arr-helicopter-multi-"]').val('Select From Map');
+        $('#lat, #long, #lat-drop, #long-drop, #lat-multi, #long-multi, #search-location, #search-location-drop, #search-location-multi, #address, #address-drop, #address-multi').val('');
+      }
+
       function getMapLocationText(searchSelector, addressSelector, lat, lng, fallbackText) {
         var searchText = $.trim($(searchSelector).val() || '');
         var addressText = $.trim($(addressSelector).val() || '');
@@ -838,14 +875,19 @@
       });
       
       $('#planes').change(function(){
-        plane_type = $("option:selected", this).data('id') || $(this).val();
-        if(isFlowerShowerSelection(plane_type)) {
+        var selected_plane_type = $("option:selected", this).data('id') || $(this).val();
+        if(isFlowerShowerSelection(selected_plane_type)) {
           $('#flower-shower-modal').modal('show');
           $(this).val(previous_plane_type || '0').trigger('change.select2');
           plane_type = previous_plane_type || '0';
           return;
         }
 
+        var machineTypeChanged = String(selected_plane_type) !== String(previous_plane_type);
+        plane_type = selected_plane_type;
+        if(machineTypeChanged) {
+          resetMachineDependentSearchState();
+        }
         previous_plane_type = plane_type;
         enforceAirAmbulanceTripSelection();
         // plane_type values

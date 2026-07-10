@@ -375,6 +375,7 @@ class PlaneController extends Controller
       //$to_date = $request_data['to-date'];
       $lat = $request_data['lat-flower-shower'];
       $long = $request_data['long-flower-shower'];
+      $location_name = isset($request_data['location-flower-shower']) && trim($request_data['location-flower-shower']) !== '' ? $request_data['location-flower-shower'] : 'Selected Location';
       $flower_shower = $request_data['flower-shower'];
       
       $cities = City::get()->keyBy('id');
@@ -384,6 +385,7 @@ class PlaneController extends Controller
       return view('plane_list_by_flower_shower')
       ->with('lat', $lat)
       ->with('long', $long)
+      ->with('location_name', $location_name)
       ->with('airports', $airports)
       ->with('owners', $owners)
       ->with('flower_shower', $flower_shower)
@@ -2411,13 +2413,22 @@ if ($settings && isset($settings->value)) {
   
   public function getPlaneListByFlowerShower(Request $request) { 
     $request_data = $request->all(); 
-    $latitude = $request_data['lat'];
-    $longitude = $request_data['long'];
+    $latitude = (float) $request_data['lat'];
+    $longitude = (float) $request_data['long'];
+    $location_name = isset($request_data['location']) && trim($request_data['location']) !== '' ? $request_data['location'] : 'Selected Location';
     $filter_id = $request_data['filter-id'];
     $sort = 'asc';
 		if($filter_id == 1){
 			$sort = 'desc';
 		}
+    $plane_types = DB::Table('plane_type')->pluck('name','id');
+    $plane_subtypes = DB::Table('plane_subtypes')->pluck('sub_type','id');
+    $tax_details = DB::table('setting')
+      ->where('setting_type', 0)
+      ->where('status', 1)
+      ->whereDate('from_date', '<=', date('Y-m-d'))
+      ->whereDate('to_date', '>', date('Y-m-d'))
+      ->first();
     
     $avail_planes = DB::table('plane')
 			->select(
@@ -2443,6 +2454,7 @@ if ($settings && isset($settings->value)) {
       $plane_details->Call_Sign = $avail_planes[$i]->Call_Sign;
       $plane_details->city_id = $avail_planes[$i]->city_id;
       $plane_details->city_name = $avail_planes[$i]->city_name;
+      $plane_details->airport_id = isset($avail_planes[$i]->airport_id) ? $avail_planes[$i]->airport_id : 0;
       $plane_details->seats = $avail_planes[$i]->seats;
       $plane_details->distance = $avail_planes[$i]->distance;
       $plane_details->speed = $avail_planes[$i]->speed;
@@ -2456,6 +2468,13 @@ if ($settings && isset($settings->value)) {
       $plane_details->flower_shower = 1;
       $plane_details->owner_id = $avail_planes[$i]->owner_id;
       $plane_details->price = $avail_planes[$i]->price_per_hour;
+      $plane_details->plane_type = isset($plane_types[$avail_planes[$i]->type_id]) ? $plane_types[$avail_planes[$i]->type_id] : '';
+      $plane_details->subtype = isset($plane_subtypes[$avail_planes[$i]->subtype]) ? $plane_subtypes[$avail_planes[$i]->subtype] : '';
+      $plane_details->tax = $this->gstRateAmount($tax_details);
+      $plane_details->selected_location = $location_name;
+      $plane_details->selected_lat = $latitude;
+      $plane_details->selected_lng = $longitude;
+      $plane_details->path = $plane_details->city_name.' > '.$location_name.' > '.$plane_details->city_name;
       
       $planes[] = $plane_details;
     }

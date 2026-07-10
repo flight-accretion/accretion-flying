@@ -7,6 +7,7 @@
           <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
           <input id="old-lat" type="hidden" name="old-lat" value="{{ $lat }}" />
           <input id="old-long" type="hidden" name="old-long" value="{{ $long }}" />
+          <input id="old-location" type="hidden" name="old-location" value="{{ $location_name }}" />
         </form>
 				<div class="row">
 					<div class="col-md-12 no-padding">
@@ -46,13 +47,118 @@
   $(function () {
    var plane_types = <?php echo json_encode($plane_types) ?>; 
    var owners = <?php echo json_encode($owners) ?>; 
+   var selectedLocation = $('#old-location').val() || 'Selected Location';
     getPlaneList();
+
+    function numberValue(value, fallback) {
+      var parsed = parseFloat(value);
+      return isNaN(parsed) ? (fallback || 0) : parsed;
+    }
+
+    function normalizeGstRate(value) {
+      var rate = parseFloat(value);
+      return !isNaN(rate) && rate > 0 ? rate : 18;
+    }
+
+    function gstRateLabel(value) {
+      var rate = normalizeGstRate(value);
+      return rate % 1 === 0 ? rate.toFixed(0) : rate.toFixed(2);
+    }
+
+    function formatMoney(value) {
+      return numberValue(value).toFixed();
+    }
+
+    function toRadians(value) {
+      return value * Math.PI / 180;
+    }
+
+    function calcDistance(p1, p2) {
+      var earthRadiusKm = 6371;
+      var lat1 = toRadians(numberValue(p1.lat));
+      var lat2 = toRadians(numberValue(p2.lat));
+      var deltaLat = toRadians(numberValue(p2.lat) - numberValue(p1.lat));
+      var deltaLng = toRadians(numberValue(p2.lng) - numberValue(p1.lng));
+      var a = Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+        Math.cos(lat1) * Math.cos(lat2) *
+        Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2);
+      var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return earthRadiusKm * c;
+    }
+
+    function flightMinutes(distanceNm, speed, speedCoefficient) {
+      speed = numberValue(speed);
+      speedCoefficient = numberValue(speedCoefficient, 1);
+
+      if(speed <= 0) {
+        return 0;
+      }
+
+      if(speedCoefficient <= 0) {
+        speedCoefficient = 1;
+      }
+
+      if(distanceNm >= 100) {
+        return (100 / ((speed * speedCoefficient) / 60)) +
+          (100 / ((speed * speedCoefficient) / 60)) +
+          ((distanceNm - 200) / (speed / 60));
+      }
+
+      return distanceNm / ((speed * speedCoefficient) / 60);
+    }
+
+    function flowerShowerTotals(plane) {
+      var basePoint = {
+        lat: numberValue(plane.avail_planes_lat),
+        lng: numberValue(plane.avail_planes_lng)
+      };
+      var servicePoint = {
+        lat: numberValue(plane.selected_lat || $('#old-lat').val()),
+        lng: numberValue(plane.selected_lng || $('#old-long').val())
+      };
+      var speedCoefficient = numberValue(plane.speed_coefficient, 1);
+      var pricePerHour = numberValue(plane.price_per_hour || plane.price);
+      var oneWayDistanceNm = 0.539957 * calcDistance(basePoint, servicePoint);
+      var outMinutes = flightMinutes(oneWayDistanceNm, plane.speed, speedCoefficient);
+      var returnMinutes = flightMinutes(oneWayDistanceNm, plane.speed, speedCoefficient);
+      var rawMinutes = outMinutes + returnMinutes;
+      var additionalMinutes = rawMinutes > 0 && rawMinutes < 120 ? 120 - rawMinutes : 0;
+      var chargeMinutes = rawMinutes + additionalMinutes;
+      var handlingCharges = 0;
+
+      if(outMinutes < 120 && oneWayDistanceNm !== 0) {
+        handlingCharges += 15000;
+      }
+
+      if(returnMinutes < 120 && oneWayDistanceNm !== 0) {
+        handlingCharges += 15000;
+      }
+
+      var flightCost = (chargeMinutes / 60) * pricePerHour;
+      var subTotal = flightCost + handlingCharges;
+      var tax = normalizeGstRate(plane.tax);
+      var taxAmount = (tax / 100) * subTotal;
+      var grandTotal = subTotal + taxAmount;
+      var roundedMinutes = Math.round(chargeMinutes);
+
+      return {
+        distance: oneWayDistanceNm * 2,
+        hours: Math.floor(roundedMinutes / 60),
+        minutes: roundedMinutes % 60,
+        flightCost: flightCost,
+        handlingCharges: handlingCharges,
+        subTotal: subTotal,
+        tax: tax,
+        taxAmount: taxAmount,
+        grandTotal: grandTotal
+      };
+    }
     
     //search-planes
     function getPlaneList()
     {
 			$.ajax({
-				url: '/plane/plane-list-by-flower-shower?lat='+ $('#old-lat').val() +'&long='+ $('#old-long').val()+'&filter-id='+ $('#price-filter').val(),
+				url: '/plane/plane-list-by-flower-shower?lat='+ $('#old-lat').val() +'&long='+ $('#old-long').val()+'&filter-id='+ $('#price-filter').val()+'&location='+encodeURIComponent(selectedLocation),
         type: 'GET',
         success: function(data, textStatus, jqXHR){     
           var plane_list = data['planes'];  
@@ -82,11 +188,20 @@
             list += '<h5 class="plane-type">'+plane_types[plane_list[i].type_id]+'</h5>';
             list += '</div>';
             list += '<div class="clearfix"></div>';
+            var owner = owners[plane_list[i].owner_id] || {};
+            var totals = flowerShowerTotals(plane_list[i]);
             list += '<h5><label class="fixed-width"><b>Base</b></label> : '+plane_list[i].city_name+'</h5>';
-            list += '<h5><label class="fixed-width"><b>Owner</b></label> : '+owners[plane_list[i].owner_id].name+'</h5>';
-            list += '<h5><label class="fixed-width"><b>Owner Contact</b></label> : '+owners[plane_list[i].owner_id].contact_number_1+'</h5>';
-            list += '<h5><label class="fixed-width"><b>Owner Email</b></label> : '+owners[plane_list[i].owner_id].email_1+'</h5>';
-            list += '<h5 class="grand-total" data-id="'+plane_list[i].id+'" data-total="'+plane_list[i].price+'"><label class="fixed-width"><b>Price (Per hour)</b></label> : <i class="fa fa-rupee"></i>'+plane_list[i].price+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Route</b></label> : '+(plane_list[i].path || (plane_list[i].city_name+' > '+selectedLocation+' > '+plane_list[i].city_name))+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Flying Cost</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(totals.flightCost)+' (For '+totals.hours+' Hrs '+totals.minutes+' min.)</h5>';
+            list += '<h5><label class="fixed-width"><b>Distance</b></label> : '+totals.distance.toFixed(2)+' NM</h5>';
+            list += '<h5><label class="fixed-width"><b>Airport Handling Charges</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(totals.handlingCharges)+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Sub Total</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(totals.subTotal)+'</h5>';
+            list += '<h5><label class="fixed-width"><b>GST ('+gstRateLabel(totals.tax)+'%)</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(totals.taxAmount)+'</h5>';
+            list += '<h5 class="grand-total" data-id="'+plane_list[i].id+'" data-total="'+formatMoney(totals.grandTotal)+'"><label class="fixed-width"><b>Grand Total</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(totals.grandTotal)+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Owner</b></label> : '+(owner.name || '-')+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Owner Contact</b></label> : '+(owner.contact_number_1 || '-')+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Owner Email</b></label> : '+(owner.email_1 || '-')+'</h5>';
+            list += '<h5><label class="fixed-width"><b>Price (Per hour)</b></label> : <i class="fa fa-rupee"></i>'+formatMoney(plane_list[i].price_per_hour || plane_list[i].price)+'</h5>';
             list += '<h5><label class="fixed-width"><b>Seats</b></label> : '+plane_list[i].seats+'</h5>';
             list += '<div class="col-md-12 text-right">';
             list += '</div>';
@@ -95,7 +210,7 @@
             list += '</div>';
           }
           $('#plane-list').html(list);
-					//sortMachines();
+					sortMachines();
         },
         error: function(jqXHR, textStatus, errorThrown){
           $('.btn-search-plane').attr('disabled', false);
@@ -138,13 +253,6 @@
 			$('#plane-list').html(plane_html);
 				
 		}
-		
-    //calculates distance between two points in km's
-    function calcDistance(p1, p2) {
-      var distance = (google.maps.geometry.spherical.computeDistanceBetween(p1, p2) / 1000);
-      //console.log("IN calc distance: ", distance);
-      return distance;
-    }
 		
 		$("#price-filter").change(function(){
 			getPlaneList();
