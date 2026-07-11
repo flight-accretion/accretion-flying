@@ -51,9 +51,15 @@ RUN rm -f bootstrap/cache/config.php bootstrap/cache/services.php \
     bootstrap/cache/services.json bootstrap/cache/packages.php \
     bootstrap/cache/events.php bootstrap/cache/routes-v7.php 2>/dev/null || true
 
-# Storage aur cache folders ke permissions sahi karo
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache \
-    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+# Storage, cache aur uploaded images folder ke permissions sahi karo
+RUN mkdir -p /var/www/html/public/uploads /var/www/html/public/uploads/thumbnail \
+    && chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/uploads \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/public/uploads
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+
+ENTRYPOINT ["docker-entrypoint"]
 
 EXPOSE 9000
 
