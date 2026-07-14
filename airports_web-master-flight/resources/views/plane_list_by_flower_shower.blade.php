@@ -86,26 +86,42 @@
       return earthRadiusKm * c;
     }
 
-    function flightMinutes(distanceNm, speed, speedCoefficient) {
-      speed = numberValue(speed);
-      speedCoefficient = numberValue(speedCoefficient, 1);
+  function flightMinutes(
+    distanceNm,
+    speed,
+    speedCoefficient
+) {
+    distanceNm = numberValue(distanceNm);
+    speed = numberValue(speed);
+    speedCoefficient =
+        numberValue(speedCoefficient, 1);
 
-      if(speed <= 0) {
+    if(distanceNm <= 0 || speed <= 0) {
         return 0;
-      }
-
-      if(speedCoefficient <= 0) {
-        speedCoefficient = 1;
-      }
-
-      if(distanceNm >= 100) {
-        return (100 / ((speed * speedCoefficient) / 60)) +
-          (100 / ((speed * speedCoefficient) / 60)) +
-          ((distanceNm - 200) / (speed / 60));
-      }
-
-      return distanceNm / ((speed * speedCoefficient) / 60);
     }
+
+    if(speedCoefficient <= 0) {
+        speedCoefficient = 1;
+    }
+
+    var reducedSpeedPerMinute =
+        (speed * speedCoefficient) / 60;
+
+    var normalSpeedPerMinute =
+        speed / 60;
+
+    if(distanceNm > 200) {
+        return (
+            200 / reducedSpeedPerMinute
+        ) + (
+            (distanceNm - 200) /
+            normalSpeedPerMinute
+        );
+    }
+
+    return distanceNm /
+        reducedSpeedPerMinute;
+}
 
     function flowerShowerTotals(plane) {
       var basePoint = {
@@ -126,9 +142,11 @@
       var chargeMinutes = rawMinutes + additionalMinutes;
       var handlingCharges = 0;
 
-      if(outMinutes < 120 && oneWayDistanceNm !== 0) {
-        handlingCharges += 15000;
-      }
+   if(outMinutes > 0 &&
+   outMinutes < 120 &&
+   oneWayDistanceNm !== 0) {
+    handlingCharges += 15000;
+}
 
       if(returnMinutes < 120 && oneWayDistanceNm !== 0) {
         handlingCharges += 15000;
@@ -142,7 +160,7 @@
       var roundedMinutes = Math.round(chargeMinutes);
 
       return {
-        distance: oneWayDistanceNm * 2,
+        distance: oneWayDistanceNm,
         hours: Math.floor(roundedMinutes / 60),
         minutes: roundedMinutes % 60,
         flightCost: flightCost,
