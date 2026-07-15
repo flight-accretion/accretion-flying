@@ -2130,7 +2130,7 @@ if ($settings && isset($settings->value)) {
 
     $ground_handling = 0;
     if($distance != 0) {
-        $ground_handling = 30000;
+        $ground_handling = $this->flowerShowerGroundHandlingAmount($plane->airport_id);
     }
 
     $flight_cost = (($total_minutes + $flower_shower_time) / 60) * $plane->price_per_hour;
@@ -2207,6 +2207,20 @@ if ($settings && isset($settings->value)) {
         ->with('plane', $plane);
 }
   
+  private function flowerShowerGroundHandlingAmount($airport_id = 0)
+  {
+    $handling_charges = DB::table('handling_charges')->pluck('charges', 'airport_id');
+
+    if($airport_id && isset($handling_charges[$airport_id]) && is_numeric($handling_charges[$airport_id])){
+      return (float) $handling_charges[$airport_id];
+    }
+
+    if(isset($handling_charges[0]) && is_numeric($handling_charges[0])){
+      return (float) $handling_charges[0];
+    }
+
+    return 0;
+  }
 	function getDistance($lat1, $lon1, $lat2, $lon2) {
     $theta = $lon1 - $lon2;
     $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
@@ -2610,7 +2624,8 @@ if ($settings && isset($settings->value)) {
       $plane_details->selected_lat = $latitude;
       $plane_details->selected_lng = $longitude;
       $plane_details->path = $plane_details->city_name.' > '.$location_name.' > '.$plane_details->city_name;
-      
+      $flower_shower_ground_handling = ((float) $avail_planes[$i]->distance > 0) ? $this->flowerShowerGroundHandlingAmount($plane_details->airport_id) : 0;
+      $plane_details->handling_charges = $flower_shower_ground_handling;      
       $planes[] = $plane_details;
     }
     

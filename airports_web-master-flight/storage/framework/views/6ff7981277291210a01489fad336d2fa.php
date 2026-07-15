@@ -169,17 +169,9 @@
       var chargeMinutes = flightChargeMinutes + flowerMinutes;
       var fuelMinutes = fuelHaultMinutes(chargeMinutes, plane);
       var totalChargeMinutes = chargeMinutes + fuelMinutes;
-      var handlingCharges = 0;
-
-   if(outMinutes > 0 &&
-   outMinutes < 120 &&
-   oneWayDistanceNm !== 0) {
-    handlingCharges += 15000;
-}
-
-      if(returnMinutes < 120 && oneWayDistanceNm !== 0) {
-        handlingCharges += 15000;
-      }
+      var handlingCharges = (typeof plane.handling_charges !== 'undefined')
+        ? numberValue(plane.handling_charges)
+        : 0;
 
       var flightCost = (totalChargeMinutes / 60) * pricePerHour;
       var subTotal = flightCost + handlingCharges;
