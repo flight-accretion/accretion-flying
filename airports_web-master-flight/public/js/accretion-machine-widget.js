@@ -209,6 +209,121 @@
     }
   }
 
+  function clearMachineQueryParams(params) {
+    [
+      'aa_search',
+      'service',
+      'trip_type',
+      'sort',
+      'departure_airport_id',
+      'arrival_airport_id',
+      'adults',
+      'date',
+      'multi_departure[]',
+      'multi_arrival[]',
+      'multi_adults[]',
+      'multi_date[]',
+      'multi_departure',
+      'multi_arrival',
+      'multi_adults',
+      'multi_date'
+    ].forEach(function(key) {
+      params.delete(key);
+    });
+  }
+
+  function isSearchUrl() {
+    return new URLSearchParams(window.location.search).get('aa_search') === '1';
+  }
+
+  function getAllParams(params, key) {
+    var values = params.getAll(key);
+    if(!values.length && key.indexOf('[]') !== -1) {
+      values = params.getAll(key.replace('[]', ''));
+    }
+    return values;
+  }
+
+  function buildSearchUrl(widget) {
+    var form = widget.form;
+    var tripType = form.querySelector('[name="trip_type"]').value || 'single';
+    var url = new URL(window.location.href);
+    var params = url.searchParams;
+
+    clearMachineQueryParams(params);
+    params.set('aa_search', '1');
+    params.set('service', widget.service);
+    params.set('trip_type', tripType);
+    params.set('sort', form.querySelector('[name="sort"]').value || 'price_asc');
+
+    if(tripType === 'multi') {
+      form.querySelectorAll('.aa-multi-leg').forEach(function(row) {
+        params.append('multi_departure[]', row.querySelector('[name="multi_departure[]"]').value);
+        params.append('multi_arrival[]', row.querySelector('[name="multi_arrival[]"]').value);
+        params.append('multi_adults[]', row.querySelector('[name="multi_adults[]"]').value || 1);
+        params.append('multi_date[]', row.querySelector('[name="multi_date[]"]').value);
+      });
+    } else {
+      params.set('departure_airport_id', form.querySelector('[name="departure_airport_id"]').value);
+      params.set('arrival_airport_id', form.querySelector('[name="arrival_airport_id"]').value);
+      params.set('adults', form.querySelector('[name="adults"]').value || 1);
+      params.set('date', form.querySelector('[name="date"]').value);
+    }
+
+    return url.toString();
+  }
+
+  function openSearchUrl(widget) {
+    window.location.href = buildSearchUrl(widget);
+  }
+
+  function openBaseUrl() {
+    var url = new URL(window.location.href);
+    clearMachineQueryParams(url.searchParams);
+    window.location.href = url.toString();
+  }
+
+  function applyUrlParams(widget) {
+    if(!widget.searchUrlMode || !isSearchUrl()) {
+      return false;
+    }
+
+    var params = new URLSearchParams(window.location.search);
+    var form = widget.form;
+    var tripType = params.get('trip_type') || 'single';
+
+    form.querySelector('[name="trip_type"]').value = tripType;
+    form.classList.toggle('is-multi', tripType === 'multi');
+    form.querySelector('[name="sort"]').value = params.get('sort') || 'price_asc';
+
+    if(tripType === 'multi') {
+      var departures = getAllParams(params, 'multi_departure[]');
+      var arrivals = getAllParams(params, 'multi_arrival[]');
+      var adults = getAllParams(params, 'multi_adults[]');
+      var dates = getAllParams(params, 'multi_date[]');
+      var rowsNeeded = Math.max(departures.length, arrivals.length, adults.length, dates.length, 1);
+
+      widget.multiContainer.innerHTML = '';
+      widget.addLegButton = null;
+      for(var i = 0; i < rowsNeeded; i++) {
+        addMultiLeg(widget);
+      }
+
+      form.querySelectorAll('.aa-multi-leg').forEach(function(row, index) {
+        row.querySelector('[name="multi_departure[]"]').value = departures[index] || '';
+        row.querySelector('[name="multi_arrival[]"]').value = arrivals[index] || '';
+        row.querySelector('[name="multi_adults[]"]').value = adults[index] || 1;
+        row.querySelector('[name="multi_date[]"]').value = dates[index] || defaultDateTimeValue();
+      });
+    } else {
+      form.querySelector('[name="departure_airport_id"]').value = params.get('departure_airport_id') || '';
+      form.querySelector('[name="arrival_airport_id"]').value = params.get('arrival_airport_id') || '';
+      form.querySelector('[name="adults"]').value = params.get('adults') || 1;
+      form.querySelector('[name="date"]').value = params.get('date') || defaultDateTimeValue();
+    }
+
+    return true;
+  }
   function createFilter(widget) {
     var form = document.createElement('form');
     form.className = 'aa-machine-filter';
@@ -266,15 +381,167 @@
       form.classList.remove('is-multi');
       widget.multiContainer.innerHTML = '';
       addMultiLeg(widget);
+      widget.hasSearched = false;
+      clearValidation(form);
+      widget.root.dispatchEvent(new CustomEvent('aa:machineFilterReset', { bubbles: true }));
+      if(widget.searchUrlMode && isSearchUrl()) {
+        openBaseUrl();
+        return;
+      }
       loadMachines(widget, false);
+    });
+
+    form.querySelector('[name="sort"]').addEventListener('change', function() {
+      if(widget.hasSearched && validateFilter(widget)) {
+        if(widget.searchUrlMode) {
+          openSearchUrl(widget);
+          return;
+        }
+        loadMachines(widget, true);
+      }
+    });
+
+    form.addEventListener('input', function() {
+      clearValidation(form);
+    });
+
+    form.addEventListener('change', function(event) {
+      if(event.target && event.target.name !== 'sort') {
+        clearValidation(form);
+      }
     });
 
     form.addEventListener('submit', function(event) {
       event.preventDefault();
+      if(!validateFilter(widget)) {
+        return;
+      }
+      widget.hasSearched = true;
+      if(widget.searchUrlMode) {
+        openSearchUrl(widget);
+        return;
+      }
+      widget.root.dispatchEvent(new CustomEvent('aa:machineFilterSearch', { bubbles: true }));
       loadMachines(widget, true);
     });
   }
 
+  function clearValidation(form) {
+    if(!form) {
+      return;
+    }
+
+    form.querySelectorAll('.aa-validation-error').forEach(function(error) {
+      error.remove();
+    });
+
+    form.querySelectorAll('.aa-has-error').forEach(function(field) {
+      field.classList.remove('aa-has-error');
+    });
+  }
+
+  function fieldValue(field) {
+    return field ? String(field.value || '').trim() : '';
+  }
+
+  function addValidationError(field, message, state) {
+    if(!field) {
+      return;
+    }
+
+    state.valid = false;
+    if(!state.firstField) {
+      state.firstField = field;
+    }
+
+    var group = field.closest('.aa-filter-field') || field.parentNode;
+    if(!group) {
+      return;
+    }
+
+    group.classList.add('aa-has-error');
+    if(!group.querySelector('.aa-validation-error')) {
+      var error = document.createElement('span');
+      error.className = 'aa-validation-error';
+      error.textContent = message;
+      error.style.display = 'block';
+      error.style.marginTop = '4px';
+      error.style.color = '#dc3545';
+      error.style.fontSize = '13px';
+      error.style.lineHeight = '1.3';
+      group.appendChild(error);
+    }
+  }
+
+  function validateFilter(widget) {
+    var form = widget.form;
+    var state = { valid: true, firstField: null };
+    var tripType = form.querySelector('[name="trip_type"]').value || 'single';
+
+    clearValidation(form);
+
+    if(tripType === 'multi') {
+      var rows = form.querySelectorAll('.aa-multi-leg');
+
+      if(!rows.length) {
+        addValidationError(widget.addLegButton, 'Please add at least one trip.', state);
+      }
+
+      rows.forEach(function(row) {
+        var departure = row.querySelector('[name="multi_departure[]"]');
+        var arrival = row.querySelector('[name="multi_arrival[]"]');
+        var adults = row.querySelector('[name="multi_adults[]"]');
+        var date = row.querySelector('[name="multi_date[]"]');
+
+        if(!fieldValue(departure)) {
+          addValidationError(departure, 'Please select departure airport.', state);
+        }
+
+        if(!fieldValue(arrival)) {
+          addValidationError(arrival, 'Please select arrival airport.', state);
+        }
+
+        if(!fieldValue(adults) || Number(fieldValue(adults)) < 1) {
+          addValidationError(adults, 'Please enter valid no. of passengers.', state);
+        }
+
+        if(!fieldValue(date)) {
+          addValidationError(date, 'Please select departure date.', state);
+        }
+      });
+    } else {
+      var departure = form.querySelector('[name="departure_airport_id"]');
+      var arrival = form.querySelector('[name="arrival_airport_id"]');
+      var adults = form.querySelector('[name="adults"]');
+      var date = form.querySelector('[name="date"]');
+
+      if(!fieldValue(departure)) {
+        addValidationError(departure, 'Please select departure airport.', state);
+      }
+
+      if(!fieldValue(arrival)) {
+        addValidationError(arrival, 'Please select arrival airport.', state);
+      }
+
+      if(!fieldValue(adults) || Number(fieldValue(adults)) < 1) {
+        addValidationError(adults, 'Please enter valid no. of passengers.', state);
+      }
+
+      if(!fieldValue(date)) {
+        addValidationError(date, 'Please select departure date.', state);
+      }
+    }
+
+    if(!state.valid && state.firstField) {
+      state.firstField.focus({ preventScroll: true });
+      var target = state.firstField.closest('.aa-filter-field') || state.firstField;
+      if(target && target.scrollIntoView) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    return state.valid;
+  }
   function addMultiLeg(widget) {
     var row = document.createElement('div');
     row.className = 'aa-multi-leg';
@@ -412,7 +679,6 @@
       var quote = machine.quote || null;
       var image = machine.image_url || widget.placeholderImage;
       var title = machine.name || 'Machine';
-      var callSign = machine.call_sign ? ' {' + machine.call_sign + '}' : '';
       var type = machine.type || SERVICE_LABELS[widget.service];
       var quoteHtml = quote ? quoteRows(machine, quote) : summaryRows(machine);
 
@@ -421,7 +687,7 @@
           '<img class="aa-machine-image" src="' + escapeHtml(image) + '" alt="' + escapeHtml(title) + '" loading="lazy" decoding="async">' +
           '<div class="aa-machine-content">' +
             '<div class="aa-machine-heading">' +
-              '<h3 class="aa-machine-title">' + escapeHtml(title + callSign) + '</h3>' +
+              '<h3 class="aa-machine-title">' + escapeHtml(title) + '</h3>' +
               '<div class="aa-machine-kicker">' +
               '<span>' + escapeHtml(type) + '</span>' +
               (machine.subtype ? '<span>' + escapeHtml(machine.subtype) + '</span>' : '') +
@@ -546,7 +812,6 @@
     var lines = [
       'Service: ' + SERVICE_LABELS[widget.service],
       'Machine: ' + (machine.name || ''),
-      'Call Sign: ' + (machine.call_sign || ''),
       'Type: ' + (machine.type || ''),
       'Subtype: ' + (machine.subtype || '')
     ];
@@ -644,7 +909,9 @@
       enquiryAction: root.getAttribute('data-enquiry-action') || '',
       placeholderImage: root.getAttribute('data-placeholder-image') || (apiBase + '/img/plane-2image.jpg'),
       airports: [],
-      machineMap: {}
+      machineMap: {},
+      hasSearched: false,
+      searchUrlMode: root.getAttribute('data-search-url-mode') === '1'
     };
 
     widget.root.classList.add('aa-machine-widget');
@@ -667,6 +934,12 @@
         setStatus(widget, 'Airport filter failed: ' + error.message, true);
       })
       .finally(function() {
+        if(applyUrlParams(widget) && validateFilter(widget)) {
+          widget.hasSearched = true;
+          widget.root.dispatchEvent(new CustomEvent('aa:machineFilterSearch', { bubbles: true }));
+          loadMachines(widget, true);
+          return;
+        }
         loadMachines(widget, false);
       });
   }

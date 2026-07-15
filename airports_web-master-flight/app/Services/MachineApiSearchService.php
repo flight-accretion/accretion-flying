@@ -103,7 +103,6 @@ class MachineApiSearchService
     return [
       'id' => (int) $plane->id,
       'name' => $plane->name,
-      'call_sign' => isset($plane->Call_Sign) ? $plane->Call_Sign : '',
       'type_id' => (int) $plane->type_id,
       'type' => isset($plane_types[$plane->type_id]) ? $plane_types[$plane->type_id] : '',
       'subtype_id' => isset($plane->subtype) ? (int) $plane->subtype : 0,
