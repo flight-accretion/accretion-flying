@@ -284,7 +284,7 @@ class MachineApiSearchService
       'grand_total' => $grand_total_amount,
       'summary' => $summary,
       'cost_estimate' => $this->quoteCostEstimate($summary),
-      'display_rows' => $this->quoteDisplayRows($summary),
+      'display_rows' => $this->quoteDisplayRows($summary, (int) $plane->type_id === 3),
       'segments' => $segments,
     ];
   }
@@ -328,7 +328,7 @@ class MachineApiSearchService
         'value' => $this->moneyLabel($crew_handling),
       ],
       'medical_cost' => [
-        'label' => 'Medical Cost',
+        'label' => 'Fixed Medical Team Cost',
         'amount' => $medical_cost,
         'formatted' => $this->moneyLabel($medical_cost),
         'value' => $this->moneyLabel($medical_cost),
@@ -381,7 +381,7 @@ class MachineApiSearchService
     ];
   }
 
-  private function quoteDisplayRows(array $summary)
+  private function quoteDisplayRows(array $summary, $is_air_ambulance = false)
   {
     $rows = [
       $this->displayRow('base', $summary['base']),
@@ -395,12 +395,16 @@ class MachineApiSearchService
       $rows[] = $this->displayRow('crew_handling_charges', $summary['crew_handling_charges']);
     }
 
-    if($summary['medical_cost']['amount'] > 0){
-      $rows[] = $this->displayRow('medical_cost', $summary['medical_cost']);
+    $rows[] = $this->displayRow('sub_total', $summary['sub_total']);
+
+    if($is_air_ambulance){
+      if($summary['medical_cost']['amount'] > 0){
+        $rows[] = $this->displayRow('medical_cost', $summary['medical_cost']);
+      }
+    } else {
+      $rows[] = $this->displayRow('gst', $summary['gst']);
     }
 
-    $rows[] = $this->displayRow('sub_total', $summary['sub_total']);
-    $rows[] = $this->displayRow('gst', $summary['gst']);
     $rows[] = $this->displayRow('grand_total', $summary['grand_total']);
 
     return $rows;

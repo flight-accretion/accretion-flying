@@ -725,18 +725,36 @@
   }
 
   function quoteRows(machine, quote) {
-    var gstLabel = 'GST' + (quote.gst_rate !== undefined && quote.gst_rate !== null ? ' (' + Number(quote.gst_rate).toLocaleString('en-IN') + '%)' : '');
+    if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
+      return '<div class="aa-machine-details">' + quote.display_rows.map(function(item) {
+        return row(item.label || '', item.value);
+      }).join('') + '</div>';
+    }
 
-    return '<div class="aa-machine-details">' +
+    var gstLabel = 'GST' + (quote.gst_rate !== undefined && quote.gst_rate !== null ? ' (' + Number(quote.gst_rate).toLocaleString('en-IN') + '%)' : '');
+    var isAirAmbulance = Number(machine.type_id || 0) === 3;
+    var html = '<div class="aa-machine-details">' +
       row('Base', machine.base && machine.base.name ? machine.base.name : '') +
       row('Route', quote.route) +
       row('Flying Cost', money(quote.flying_cost) + ' (For ' + (quote.flight_time || '-') + '.)') +
       row('Distance', numberText(quote.distance_nm, ' NM')) +
-      row('Airport Handling Charges', money(quote.handling_charges)) +
-      row('Sub Total', money(quote.sub_total)) +
-      row(gstLabel, money(quote.gst_amount)) +
-      row('Grand Total', money(quote.grand_total)) +
-    '</div>';
+      row('Airport Handling Charges', money(quote.handling_charges));
+
+    if(Number(quote.crew_handling || 0) > 0) {
+      html += row('Crew Handling Charges', money(quote.crew_handling));
+    }
+
+    html += row('Sub Total', money(quote.sub_total));
+
+    if(isAirAmbulance && Number(quote.medical_cost || 0) > 0) {
+      html += row('Fixed Medical Team Cost', money(quote.medical_cost));
+    } else {
+      html += row(gstLabel, money(quote.gst_amount));
+    }
+
+    html += row('Grand Total', money(quote.grand_total)) + '</div>';
+
+    return html;
   }
 
   function row(label, value) {
