@@ -384,6 +384,12 @@
             </div>
           </div>
           <div class="row">
+            <div class="col-md-6 form-group">
+              <label>Flower Shower Time (minutes)</label>
+              <input type="number" id="flower-shower-time" name="flower-shower-time" class="form-control" min="1" step="1" placeholder="enter time in minutes" required>
+            </div>
+          </div>
+          <div class="row">
             <div class="col-md-12 text-center">
               <div class="form-group">
                 <input id="search-location-flower-shower" class="form-control mb-2" placeholder="Search Box">
@@ -1262,6 +1268,12 @@
       $('#flower-shower-modal form').on('submit', function() {
         var flowerLat = $('#lat-flower-shower').val();
         var flowerLong = $('#long-flower-shower').val();
+        var flowerShowerTime = parseInt($('#flower-shower-time').val(), 10);
+        if(isNaN(flowerShowerTime) || flowerShowerTime <= 0) {
+          alert('Please enter flower shower time in minutes.');
+          $('#flower-shower-time').focus();
+          return false;
+        }
         var flowerLocation = getMapLocationText('#search-location-flower-shower', '#location-flower-shower', flowerLat, flowerLong, 'Selected Location');
         $('#location-flower-shower').val(flowerLocation);
       });

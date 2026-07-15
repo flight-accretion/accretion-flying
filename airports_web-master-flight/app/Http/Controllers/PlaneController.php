@@ -376,6 +376,8 @@ class PlaneController extends Controller
       $lat = $request_data['lat-flower-shower'];
       $long = $request_data['long-flower-shower'];
       $location_name = isset($request_data['location-flower-shower']) && trim($request_data['location-flower-shower']) !== '' ? $request_data['location-flower-shower'] : 'Selected Location';
+      $flower_shower_time = isset($request_data['flower-shower-time']) ? (int) $request_data['flower-shower-time'] : 0;
+      Session::put('flower_shower_time', $flower_shower_time);
       $flower_shower = $request_data['flower-shower'];
       
       $cities = City::get()->keyBy('id');
@@ -386,6 +388,7 @@ class PlaneController extends Controller
       ->with('lat', $lat)
       ->with('long', $long)
       ->with('location_name', $location_name)
+      ->with('flower_shower_time', $flower_shower_time)
       ->with('airports', $airports)
       ->with('owners', $owners)
       ->with('flower_shower', $flower_shower)
@@ -1083,6 +1086,9 @@ class PlaneController extends Controller
   //get plane details
   public function getPlane(Request $request){
     $request_data = $request->all();
+	if(isset($request_data['flower-shower']) && (int) $request_data['flower-shower'] === 1) {
+    return $this->getFlowerShowerPlaneDetails($request_data);
+}
 		$routes_data = Route::select('route.*', 'location_1_air.latitude as location_1_latitude', 'location_1_air.longitude as location_1_longitude', 'location_2_air.latitude as location_2_latitude', 'location_2_air.longitude as location_2_longitude', DB::raw('CONCAT(location_1_air.latitude,"-",location_1_air.longitude) as lat_long'))
 									->leftJoin('airport as location_1_air', 'location_1_air.id', '=', 'route.location_1')
 									->leftJoin('airport as location_2_air', 'location_2_air.id', '=', 'route.location_2')
@@ -2071,6 +2077,135 @@ if ($settings && isset($settings->value)) {
 		
 		
 	}
+	private function getFlowerShowerPlaneDetails($request_data)
+{
+    $plane = Plane::find($request_data['plane-id']);
+
+    if(!$plane) {
+        abort(404);
+    }
+
+    $selected_lat = (float) $request_data['selected-lat'];
+    $selected_long = (float) $request_data['selected-long'];
+    $selected_location = isset($request_data['selected-location']) && trim($request_data['selected-location']) !== ''
+        ? $request_data['selected-location']
+        : 'Selected Location';
+    $flower_shower_time = isset($request_data['flower-shower-time'])
+        ? (int) $request_data['flower-shower-time']
+        : (int) Session::get('flower_shower_time', 0);
+    if($flower_shower_time > 0) {
+        Session::put('flower_shower_time', $flower_shower_time);
+    }
+
+    $speed_coefficient = isset($request_data['speed_coefficient']) && (float) $request_data['speed_coefficient'] > 0
+        ? (float) $request_data['speed_coefficient']
+        : 1;
+
+    $plane_images = PlaneImage::where('plane_id', $plane->id)->get();
+    $plane_types = DB::Table('plane_type')->pluck('name','id');
+    $airports = Airport::where('status',1)->orderBy('updated_at')->get();
+    $cities = City::get()->keyBy('id');
+
+    $base_name = isset($cities[$plane->city_id]) ? $cities[$plane->city_id]->name : 'Base';
+    $distance = $this->getDistance($plane->latitude, $plane->longitude, $selected_lat, $selected_long);
+
+    $time = 0;
+    if($distance > 0 && $plane->speed > 0) {
+        if($distance > 200) {
+            $time = (200 / (($plane->speed * $speed_coefficient) / 60)) + (($distance - 200) / ($plane->speed / 60));
+        } else {
+            $time = $distance / (($plane->speed * $speed_coefficient) / 60);
+        }
+    }
+
+    $one_way_hours = floor(round($time) / 60);
+    $one_way_minutes = round($time) % 60;
+
+    $total_minutes_raw = round($time) * 2;
+    $additional_time = ($total_minutes_raw > 0 && $total_minutes_raw < 120) ? (120 - $total_minutes_raw) : 0;
+    $total_minutes = $total_minutes_raw + $additional_time;
+
+    $total_hours = floor($total_minutes / 60);
+    $total_mins = $total_minutes % 60;
+
+    $ground_handling = 0;
+    if($distance != 0) {
+        $ground_handling = 30000;
+    }
+
+    $flight_cost = (($total_minutes + $flower_shower_time) / 60) * $plane->price_per_hour;
+
+    $date = date('Y-m-d H:i');
+    $flights = array();
+
+    $flights[0]['departure'] = $base_name;
+    $flights[0]['arrival'] = $selected_location;
+    $flights[0]['departure_time'] = $date;
+    $flights[0]['distance'] = $distance;
+    $flights[0]['hours'] = $one_way_hours;
+    $flights[0]['minutes'] = $one_way_minutes;
+    $flights[0]['cost'] = ($flight_cost / 2);
+    $flights[0]['arrival_time'] = date('Y-m-d H:i', strtotime($date.' +'.$one_way_hours.' hours +'.$one_way_minutes.' minutes'));
+    $flights[0]['details'] = 'Flower Shower';
+
+    $flights[1]['departure'] = $selected_location;
+    $flights[1]['arrival'] = $base_name;
+    $flights[1]['departure_time'] = date('Y-m-d H:i', strtotime($flights[0]['arrival_time'].' +1 hours'));
+    $flights[1]['distance'] = $distance;
+    $flights[1]['hours'] = $one_way_hours;
+    $flights[1]['minutes'] = $one_way_minutes;
+    $flights[1]['cost'] = ($flight_cost / 2);
+    $flights[1]['arrival_time'] = date('Y-m-d H:i', strtotime($flights[1]['departure_time'].' +'.$one_way_hours.' hours +'.$one_way_minutes.' minutes'));
+    $flights[1]['details'] = 'Empty Leg';
+
+    $points = 0;
+    $settings = BookingSetting::where('field', 'points')->first();
+    if($settings && isset($settings->value)) {
+        $points = $settings->value;
+    }
+
+    $owner = Owner::find($plane->owner_id);
+    $sec_details = SecondaryContact::where('owner_id', $plane->owner_id)->first();
+    $owner_details = array(
+        'name' => $owner ? $owner->name : '',
+        'email1' => $owner ? $owner->email_1 : '',
+        'contact1' => $owner ? $owner->contact_number_1 : '',
+        'sec_name' => $sec_details ? $sec_details->name : '',
+        'sec_contact' => $sec_details ? $sec_details->contact : '',
+        'sec_email' => $sec_details ? $sec_details->email : '',
+    );
+
+    return view('plane_details')
+        ->with('points', $points)
+        ->with('flights', $flights)
+        ->with('route_debug', array())
+        ->with('additional_cost', 0)
+        ->with('additional_days', 0)
+        ->with('owner_details', $owner_details)
+        ->with('ground_handling', $ground_handling)
+        ->with('crew_handling', 0)
+        ->with('medical_cost', 0)
+        ->with('total_flying_cost', $flight_cost)
+        ->with('plane_images', $plane_images)
+        ->with('airports', $airports)
+        ->with('departure', '')
+        ->with('arrival', '')
+        ->with('latitude', $selected_lat)
+        ->with('longitude', $selected_long)
+        ->with('adults', 1)
+        ->with('date', $date)
+        ->with('flower_shower_time', $flower_shower_time)
+        ->with('total_hours', $total_hours)
+        ->with('total_mins', $total_mins)
+        ->with('plane_types', $plane_types)
+        ->with('plane_type', $plane->type_id)
+        ->with('cities', $cities)
+        ->with('stay_time_hours', 0)
+        ->with('stay_time_minutes', 0)
+        ->with('export_details', '')
+        ->with('flower_shower', 1)
+        ->with('plane', $plane);
+}
   
 	function getDistance($lat1, $lon1, $lat2, $lon2) {
     $theta = $lon1 - $lon2;

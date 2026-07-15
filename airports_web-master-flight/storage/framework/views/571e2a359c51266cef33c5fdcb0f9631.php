@@ -1,5 +1,4 @@
-@extends('layouts.plane_header')
-@section('content')
+<?php $__env->startSection('content'); ?>
 
    <header>
     <div class="header-content text-center">
@@ -13,8 +12,8 @@
 		</div>
     <div class="header-content hide">
       <div class="header-content-inner">
-        <form id="search-planes" role="form" method="GET" action="{{ url('/plane/search') }}">
-          <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
+        <form id="search-planes" role="form" method="GET" action="<?php echo e(url('/plane/search')); ?>">
+          <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>"> 
           <div class="row">
             <div class="col-md-2 col-md-offset-1 no-padding">
               <div class="form-group">
@@ -29,13 +28,13 @@
               <div class="form-group">
                 <select class="form-control search-planes-element select2" id="planes" name="planes">
                   <option value="0" selected>Machine Type</option>
-                  @foreach($plane_types as $id => $plane_type_name)
-                    @if($id == $plane_type)
-                      <option value="{{ $id}}" data-id="{{ $id }}" selected>{{ $plane_type_name }}</option>
-                    @else
-                      <option value="{{ $id}}" data-id="{{ $id }}">{{ $plane_type_name }}</option>
-                    @endif
-                  @endforeach
+                  <?php $__currentLoopData = $plane_types; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $plane_type_name): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($id == $plane_type): ?>
+                      <option value="<?php echo e($id); ?>" data-id="<?php echo e($id); ?>" selected><?php echo e($plane_type_name); ?></option>
+                    <?php else: ?>
+                      <option value="<?php echo e($id); ?>" data-id="<?php echo e($id); ?>"><?php echo e($plane_type_name); ?></option>
+                    <?php endif; ?>
+                  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
               </div>
             </div>
@@ -45,15 +44,15 @@
               <div class="form-group">
                 <select class="form-control search-planes-element select2" id="departure" name="departure">
                   <option value="0" selected>Departure</option>
-                  @foreach($airports as $airport)
-                    @if($airport->id == $departure)
-                      <option value="{{ $airport->id}}" data-lat="{{ $airport->latitude }}"  data-long="{{ $airport->longitude }}"selected>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
-                    @else
-                      <option value="{{ $airport->id}}" data-lat="{{ $airport->latitude }}"  data-long="{{ $airport->longitude }}" >{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
-                    @endif                   
-                  @endforeach
-                  <input type="hidden" id="dep-latitude" name="dep-latitude"  value="{{ $latitude }}">
-                  <input type="hidden" id="dep-longitude" name="dep-longitude"  value="{{ $longitude }}">
+                  <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($airport->id == $departure): ?>
+                      <option value="<?php echo e($airport->id); ?>" data-lat="<?php echo e($airport->latitude); ?>"  data-long="<?php echo e($airport->longitude); ?>"selected><?php echo e($airport->name); ?><?php if(isset($cities[$airport->city_id])): ?>,  <?php echo e($cities[$airport->city_id]->name); ?> <?php endif; ?></option>
+                    <?php else: ?>
+                      <option value="<?php echo e($airport->id); ?>" data-lat="<?php echo e($airport->latitude); ?>"  data-long="<?php echo e($airport->longitude); ?>" ><?php echo e($airport->name); ?><?php if(isset($cities[$airport->city_id])): ?>,  <?php echo e($cities[$airport->city_id]->name); ?> <?php endif; ?></option>
+                    <?php endif; ?>                   
+                  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                  <input type="hidden" id="dep-latitude" name="dep-latitude"  value="<?php echo e($latitude); ?>">
+                  <input type="hidden" id="dep-longitude" name="dep-longitude"  value="<?php echo e($longitude); ?>">
                 </select>
               </div>
             </div>
@@ -61,27 +60,27 @@
               <div class="form-group">
                 <select class="form-control search-planes-element select2" id="arrival" name="arrival">
                   <option value="0" selected>Arrival</option>
-                  @foreach($airports as $airport)
-                    @if($airport->id == $arrival)
-                      <option value="{{ $airport->id}}" selected>{{ $airport->name }}@if(isset($cities[$airport->city_id])),  {{ $cities[$airport->city_id]->name }} @endif</option>
-                    @else
-                      <option value="{{ $airport->id}}" >{{ $airport->name }}@if(isset($cities[$airport->city_id])), {{ $cities[$airport->city_id]->name }} @endif</option>
-                    @endif 
-                  @endforeach
+                  <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <?php if($airport->id == $arrival): ?>
+                      <option value="<?php echo e($airport->id); ?>" selected><?php echo e($airport->name); ?><?php if(isset($cities[$airport->city_id])): ?>,  <?php echo e($cities[$airport->city_id]->name); ?> <?php endif; ?></option>
+                    <?php else: ?>
+                      <option value="<?php echo e($airport->id); ?>" ><?php echo e($airport->name); ?><?php if(isset($cities[$airport->city_id])): ?>, <?php echo e($cities[$airport->city_id]->name); ?> <?php endif; ?></option>
+                    <?php endif; ?> 
+                  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
               </div>
             </div>
             <div class="col-md-2 no-padding">
               <div class="form-group">
-                <input type="number" class="form-control search-planes-element" id="adults" placeholder="Adults" name="adults" value="{{ $adults }}" min=1 oninput="validity.valid||(value='');">
-                <span class="error-font text-danger">{{ $errors->first('adults')}}</span>
+                <input type="number" class="form-control search-planes-element" id="adults" placeholder="Adults" name="adults" value="<?php echo e($adults); ?>" min=1 oninput="validity.valid||(value='');">
+                <span class="error-font text-danger"><?php echo e($errors->first('adults')); ?></span>
               </div>
             </div>
             <div class="col-md-2 no-padding">
               <div class="input-group date" id="from-date">								
-                <input type="text" class="form-control date-time-picker search-planes-element" id="date" name="date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY"  value="{{ $date }}" tabindex="2">
+                <input type="text" class="form-control date-time-picker search-planes-element" id="date" name="date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY"  value="<?php echo e($date); ?>" tabindex="2">
               </div>
-              <span class="error-font text-danger">{{ $errors->first('date') }}</span>
+              <span class="error-font text-danger"><?php echo e($errors->first('date')); ?></span>
             </div>
             <div class="col-md-2 no-padding" id="btn-search">
               <button type="submit" class="btn btn-search-plane">SEARCH</button>
@@ -92,9 +91,9 @@
               <div class="form-group">
                 <select class="form-control search-planes-element select2" id="round-departure" name="round-departure">
                   <option value="0" selected>Departure</option>
-                  @foreach($airports as $airport)
-                    <option value="{{ $airport->id}}">{{ $airport->name }}</option>
-                  @endforeach
+                  <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($airport->id); ?>"><?php echo e($airport->name); ?></option>
+                  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
               </div>
             </div>
@@ -102,24 +101,24 @@
               <div class="form-group">
                 <select class="form-control search-planes-element select2" id="round-arrival" name="round-arrival">
                   <option value="0" selected>Arrival</option>
-                  @foreach($airports as $airport)
-                    <option value="{{ $airport->id}}">{{ $airport->name }}</option>
-                  @endforeach
+                  <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <option value="<?php echo e($airport->id); ?>"><?php echo e($airport->name); ?></option>
+                  <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                 </select>
               </div>
             </div>
             <div class="col-md-2 no-padding">
               <div class="form-group">
-                <input type="number" class="form-control search-planes-element" id="round-adults" placeholder="Adults" name="round-adults" value="{{ $adults }}" min=1 oninput="validity.valid||(value='');">
-                <span class="error-font text-danger">{{ $errors->first('adults')}}</span>
+                <input type="number" class="form-control search-planes-element" id="round-adults" placeholder="Adults" name="round-adults" value="<?php echo e($adults); ?>" min=1 oninput="validity.valid||(value='');">
+                <span class="error-font text-danger"><?php echo e($errors->first('adults')); ?></span>
               </div>
             </div>
             <div class="col-md-2 no-padding">
               <div class="input-group date" id="from-date">								
-                <input type="text" class="form-control date-picker search-planes-element" id="round-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY"  value="{{ $date }}" tabindex="2">
+                <input type="text" class="form-control date-picker search-planes-element" id="round-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY"  value="<?php echo e($date); ?>" tabindex="2">
                 
               </div>
-              <span class="error-font text-danger">{{ $errors->first('from-date') }}</span>
+              <span class="error-font text-danger"><?php echo e($errors->first('from-date')); ?></span>
             </div>
             <div class="col-md-2 no-padding hide" id="btn-search-round">
               <button type="submit" class="btn btn-search-plane">SEARCH</button>
@@ -134,21 +133,21 @@
     <div class="container">
       <div class="row">
         <div class="col-lg-12 text-center">
-          <h2 class="section-heading">{{ $plane->name }}</h2>
+          <h2 class="section-heading"><?php echo e($plane->name); ?></h2>
           <hr>
         </div>
       </div>
       <div class="row">
         <div class="col-lg-12 text-center">
-          @if($plane->display_image != '')
+          <?php if($plane->display_image != ''): ?>
             <div class="col-md-8 col-md-offset-2">
-                <div class="plane-image gallery-image" style="background-image:url('/uploads/{{$plane->display_image}}');">
+                <div class="plane-image gallery-image" style="background-image:url('/uploads/<?php echo e($plane->display_image); ?>');">
                   <div class="plane-details-image"></div>
                 </div>
             </div>
-          @else
+          <?php else: ?>
             <i class="fa fa-picture-o fa-4x"></i>
-          @endif
+          <?php endif; ?>
         </div>
       </div>
       <div class="row">
@@ -162,7 +161,7 @@
           <div class="tab-content">
             <div role="tabpanel" class="tab-pane active" id="flight-details">
               <div class="row">
-                <h4>Machine : {{ $plane->name }} (<i class="fa fa-rupee"></i>{{ $plane->price_per_hour }} per hour)</h4>
+                <h4>Machine : <?php echo e($plane->name); ?> (<i class="fa fa-rupee"></i><?php echo e($plane->price_per_hour); ?> per hour)</h4>
                 <table class="table table-hover table-bordered">
                   <thead>
                     <tr>
@@ -175,23 +174,23 @@
                     </tr>
                   </thead>
                   <tbody>
-										@foreach($flights as $flight)
+										<?php $__currentLoopData = $flights; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $flight): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <tr>
-                      <td>{{ date('d F, Y H:i', strtotime($flight['departure_time'])) }}</td>
-                      <td>{{ $flight['departure'] }}</td>
-                      <td>{{ ( $flight['hours'] != 0 ? $flight['hours'].' hour ' : '').($flight['minutes'] != 0 ?$flight['minutes'].' minute':'')  }}</td>
-                      <td>{{ $flight['arrival'] }}</td>
-                      <td>{{ date('d F, Y H:i', strtotime($flight['arrival_time'])) }}</td>
-                      <td>{{ $flight['details'] }}</td>
+                      <td><?php echo e(date('d F, Y H:i', strtotime($flight['departure_time']))); ?></td>
+                      <td><?php echo e($flight['departure']); ?></td>
+                      <td><?php echo e(( $flight['hours'] != 0 ? $flight['hours'].' hour ' : '').($flight['minutes'] != 0 ?$flight['minutes'].' minute':'')); ?></td>
+                      <td><?php echo e($flight['arrival']); ?></td>
+                      <td><?php echo e(date('d F, Y H:i', strtotime($flight['arrival_time']))); ?></td>
+                      <td><?php echo e($flight['details']); ?></td>
                     </tr>
-										@endforeach
+										<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </tbody>
                 </table>
               </div>
             </div>
             <div role="tabpanel" class="tab-pane" id="cost">
               <div class="row">
-                <h4>Machine : {{ $plane->name }} (<i class="fa fa-rupee"></i>{{ $plane->price_per_hour }} per hour)</h4>
+                <h4>Machine : <?php echo e($plane->name); ?> (<i class="fa fa-rupee"></i><?php echo e($plane->price_per_hour); ?> per hour)</h4>
                 
                  <table class="table table-hover table-bordered">
                   <thead>
@@ -207,18 +206,18 @@
                     </tr>
                   </thead>
                   <tbody>
-										@foreach($flights as $flight)
+										<?php $__currentLoopData = $flights; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $flight): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                     <tr>
-                      <td>{{ date('d F, Y H:i', strtotime($flight['departure_time'])) }}</td>
-                      <td>{{ $flight['departure'] }}</td>
-                      <td>{{ ( $flight['hours'] != 0 ? $flight['hours'].' hour ' : '').($flight['minutes'] != 0 ?$flight['minutes'].' minute':'')  }}</td>
-                      <td>{{ $flight['arrival'] }}</td>
-                      <td>{{ date('d F, Y H:i', strtotime($flight['arrival_time'])) }}</td>
-                      <td>{{ round($flight['distance'],2) }}</td>
-                      <td>{{ round($flight['cost'],2) }}</td>
-                      <td>{{ $flight['details'] }}</td>
+                      <td><?php echo e(date('d F, Y H:i', strtotime($flight['departure_time']))); ?></td>
+                      <td><?php echo e($flight['departure']); ?></td>
+                      <td><?php echo e(( $flight['hours'] != 0 ? $flight['hours'].' hour ' : '').($flight['minutes'] != 0 ?$flight['minutes'].' minute':'')); ?></td>
+                      <td><?php echo e($flight['arrival']); ?></td>
+                      <td><?php echo e(date('d F, Y H:i', strtotime($flight['arrival_time']))); ?></td>
+                      <td><?php echo e(round($flight['distance'],2)); ?></td>
+                      <td><?php echo e(round($flight['cost'],2)); ?></td>
+                      <td><?php echo e($flight['details']); ?></td>
                     </tr>
-										@endforeach
+										<?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </tbody>
                 </table>
               </div>
@@ -266,34 +265,34 @@
                       ?>
                       <tr>
                         <td>Flight Time</td>
-                        <td class="text-right">{{ $display_flight_time_hours }} Hrs {{ $display_flight_time_mins }} Mins</td>
+                        <td class="text-right"><?php echo e($display_flight_time_hours); ?> Hrs <?php echo e($display_flight_time_mins); ?> Mins</td>
                       </tr>
-                      @if($display_flower_shower_time > 0)
+                      <?php if($display_flower_shower_time > 0): ?>
                         <tr>
                           <td>Flower Shower Time</td>
-                          <td class="text-right">{{ floor($display_flower_shower_time / 60) }} Hrs {{ $display_flower_shower_time % 60 }} Mins</td>
+                          <td class="text-right"><?php echo e(floor($display_flower_shower_time / 60)); ?> Hrs <?php echo e($display_flower_shower_time % 60); ?> Mins</td>
                         </tr>
-                      @endif
+                      <?php endif; ?>
                        <tr>
                       <td>Fuel Hault</td>
-                      <td class="text-right">{{ (int)($fuel_hault/60) }} Hrs {{ (int)$fuel_hault%60 }} Mins</td>
+                      <td class="text-right"><?php echo e((int)($fuel_hault/60)); ?> Hrs <?php echo e((int)$fuel_hault%60); ?> Mins</td>
                     </tr>
 											<tr>
 												<td>Total Flight Time</td>
-												<td class="text-right">{{ $display_total_hours }} Hrs {{ $display_total_mins }} Mins</td>
+												<td class="text-right"><?php echo e($display_total_hours); ?> Hrs <?php echo e($display_total_mins); ?> Mins</td>
 											</tr>
-                      @if(isset($plane_type) && $plane_type==2)
+                      <?php if(isset($plane_type) && $plane_type==2): ?>
                    
                    
-                    @endif
+                    <?php endif; ?>
  											<?php 
 												$flying_hours = $display_total_hours;
 												$flying_mins = $display_total_mins;
 											?>
-											@if(($stay_time_hours + $stay_time_minutes) != 0)
+											<?php if(($stay_time_hours + $stay_time_minutes) != 0): ?>
                         <tr>
                           <td>Stay Time</td>
-                          <td class="text-right">{{ $stay_time_hours }} Hrs {{ $stay_time_minutes }} Mins</td>
+                          <td class="text-right"><?php echo e($stay_time_hours); ?> Hrs <?php echo e($stay_time_minutes); ?> Mins</td>
                         </tr>
                         <?php 
                           $total_billing_minutes = ($stay_time_hours + $display_total_hours)*60 + $display_total_mins + $stay_time_minutes ;
@@ -302,9 +301,9 @@
                         ?>
                         <tr>
                           <td>Total Billing Time</td>
-                          <td class="text-right">{{ $billing_hours }} Hrs {{ $billing_minutes }} Mins</td>
+                          <td class="text-right"><?php echo e($billing_hours); ?> Hrs <?php echo e($billing_minutes); ?> Mins</td>
                         </tr>
-											@endif
+											<?php endif; ?>
 											<tr>
 												<td>Flying Cost </td>
 												<?php 
@@ -314,47 +313,47 @@
                             }
 													$flying_cost = $total_flying_cost; 
 												?>
-												<td class="text-right">{{ round($total_flying_cost) }}</td>
+												<td class="text-right"><?php echo e(round($total_flying_cost)); ?></td>
 											</tr>
 											<tr>
 												<td>Ground Handling</td>
-												<td class="text-right">{{ $ground_handling }}</td>
+												<td class="text-right"><?php echo e($ground_handling); ?></td>
 											</tr>
 											<tr>
 												<td>Crew Handling</td>
-												<td class="text-right">{{ round($crew_handling) }}</td>
+												<td class="text-right"><?php echo e(round($crew_handling)); ?></td>
 											</tr>
-											@if($plane->type_id == 3 && $medical_cost > 0)
+											<?php if($plane->type_id == 3 && $medical_cost > 0): ?>
 												<tr>
 													<td>Fixed Medical Team Cost</td>
-													<td class="text-right">{{ round($medical_cost) }}</td>
+													<td class="text-right"><?php echo e(round($medical_cost)); ?></td>
 												</tr>
-											@endif
+											<?php endif; ?>
 											<tr>
 												<td>Other Charges</td>
 												<td class="text-right">As per actual</td>
 											</tr>
 											<tr>
 												<td>Sub Total</td>  
-												<td class="text-right">{{ round($total_flying_cost + $ground_handling + $crew_handling + $medical_cost) }}</td>
+												<td class="text-right"><?php echo e(round($total_flying_cost + $ground_handling + $crew_handling + $medical_cost)); ?></td>
 											</tr>
-											@if($plane->type_id != 3)
+											<?php if($plane->type_id != 3): ?>
 												<tr>
 													<td>GST @ 18%</td>
-													<td class="text-right">{{ round((($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100),2) }}</td>
+													<td class="text-right"><?php echo e(round((($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100),2)); ?></td>
 												</tr>
 												<tr>
 													<td>Grand Total</td>
 													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost + (($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100))); ?>
-													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost + (($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100)))}}</td>
+													<td class="text-right"><?php echo e(round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost + (($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ) * 18/100)))); ?></td>
 												</tr>
-											@else
+											<?php else: ?>
 												<tr>
 													<td>Grand Total</td>
 													<?php $grand_total = round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost )); ?>
-													<td class="text-right">{{  round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ))}}</td>
+													<td class="text-right"><?php echo e(round(($total_flying_cost + $ground_handling + $crew_handling + $medical_cost ))); ?></td>
 												</tr>
-											@endif
+											<?php endif; ?>
 										</tbody>
 									</table>
 								</div>
@@ -363,7 +362,7 @@
 
             <div role="tabpanel" class="tab-pane" id="owner-details">
               <div class="row">
-                <h4>Machine : {{ $plane->name }} (<i class="fa fa-rupee"></i>{{ $plane->price_per_hour }} per hour)</h4>
+                <h4>Machine : <?php echo e($plane->name); ?> (<i class="fa fa-rupee"></i><?php echo e($plane->price_per_hour); ?> per hour)</h4>
                   <table class="table table-hover table-bordered">
                   <thead>
                     <tr>
@@ -374,21 +373,21 @@
                   <tbody>
                     <tr>
                       <th>Name</th>
-                      <td>{{ $owner_details['name'] }}</td>
+                      <td><?php echo e($owner_details['name']); ?></td>
                       <th>Name</th>
-                      <td>{{ $owner_details['sec_name'] }}</td>
+                      <td><?php echo e($owner_details['sec_name']); ?></td>
                     </tr>
                     <tr>
                       <th>Email</th>
-                      <td>{{ $owner_details['email1'] }}</td>
+                      <td><?php echo e($owner_details['email1']); ?></td>
                       <th>Email</th>
-                      <td>{{ $owner_details['sec_email'] }}</td>
+                      <td><?php echo e($owner_details['sec_email']); ?></td>
                     </tr>
                     <tr>
                       <th>Contact</th>
-                      <td>{{ $owner_details['contact1'] }}</td>
+                      <td><?php echo e($owner_details['contact1']); ?></td>
                       <th>Contact</th>
-                      <td>{{ $owner_details['sec_contact'] }}</td>
+                      <td><?php echo e($owner_details['sec_contact']); ?></td>
                     </tr>
                   </tbody>
                 </table>
@@ -401,19 +400,19 @@
       <div class="row">
           
         <div class="col-md-12 text-left" style="display: flex; justify-content: center;">
-          <form id="flight-details" role="form" method="POST" action="{{ url('/plane/machine-details-report') }}">
+          <form id="flight-details" role="form" method="POST" action="<?php echo e(url('/plane/machine-details-report')); ?>">
 						<br/>
             <button type="submit" class="btn btn-export text-white" style="width: 200px;">Export Details</button>
-             <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
-             <input id="plane-id" type="hidden" name="plane-id" value="{{ $plane->id }}" />
-             <input id="plane-name" type="hidden" name="plane-name" value="{{ $plane->name }}" />
-             <input id="total-hours" type="hidden" name="total-hours" value="{{ $display_total_hours }}" />
-             <input id="total-mins" type="hidden" name="total-mins" value="{{ $display_total_mins }}" />
-             <input id="total-flying-cost" type="hidden" name="total-flying-cost" value="{{ $total_flying_cost }}" />
-             <input id="ground-handling" type="hidden" name="ground-handling" value="{{ $ground_handling }}" />
-             <input id="crew-handling" type="hidden" name="crew-handling" value="{{ $crew_handling }}" />
-             <input id="medical-cost" type="hidden" name="medical-cost" value="{{ $medical_cost }}" />
-             <input id="flights" type="hidden" name="flights" value="{{ json_encode($flights) }}" />
+             <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>"> 
+             <input id="plane-id" type="hidden" name="plane-id" value="<?php echo e($plane->id); ?>" />
+             <input id="plane-name" type="hidden" name="plane-name" value="<?php echo e($plane->name); ?>" />
+             <input id="total-hours" type="hidden" name="total-hours" value="<?php echo e($display_total_hours); ?>" />
+             <input id="total-mins" type="hidden" name="total-mins" value="<?php echo e($display_total_mins); ?>" />
+             <input id="total-flying-cost" type="hidden" name="total-flying-cost" value="<?php echo e($total_flying_cost); ?>" />
+             <input id="ground-handling" type="hidden" name="ground-handling" value="<?php echo e($ground_handling); ?>" />
+             <input id="crew-handling" type="hidden" name="crew-handling" value="<?php echo e($crew_handling); ?>" />
+             <input id="medical-cost" type="hidden" name="medical-cost" value="<?php echo e($medical_cost); ?>" />
+             <input id="flights" type="hidden" name="flights" value="<?php echo e(json_encode($flights)); ?>" />
           </form>
         </div>
       </div>
@@ -440,33 +439,33 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-body">
-        @if(count($carousel_images) > 0)
-        <div id="carousel-example-generic" class="carousel slide" @if(count($carousel_images) > 1) data-ride="carousel" @endif>
+        <?php if(count($carousel_images) > 0): ?>
+        <div id="carousel-example-generic" class="carousel slide" <?php if(count($carousel_images) > 1): ?> data-ride="carousel" <?php endif; ?>>
           <!-- Indicators -->
-          @if(count($carousel_images) > 1)
+          <?php if(count($carousel_images) > 1): ?>
           <ol class="carousel-indicators">
-            @for($n=0; $n<count($carousel_images); $n++)
-              <li data-target="#carousel-example-generic" data-slide-to="{{ $n }}" class="{{ $n == 0 ? 'active' : '' }}"></li>
-            @endfor
+            <?php for($n=0; $n<count($carousel_images); $n++): ?>
+              <li data-target="#carousel-example-generic" data-slide-to="<?php echo e($n); ?>" class="<?php echo e($n == 0 ? 'active' : ''); ?>"></li>
+            <?php endfor; ?>
           </ol>
-          @endif
+          <?php endif; ?>
                
 
           <!-- Wrapper for slides -->
           <div class="carousel-inner" role="listbox">
-            @foreach($carousel_images as $key=>$image)
-              <div class="item {{ $key == 0 ? 'active' : '' }}">
-                <img src="/uploads/{{ $image }}" alt="{{ $plane->name }}">
+            <?php $__currentLoopData = $carousel_images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key=>$image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+              <div class="item <?php echo e($key == 0 ? 'active' : ''); ?>">
+                <img src="/uploads/<?php echo e($image); ?>" alt="<?php echo e($plane->name); ?>">
                 <div class="carousel-caption">
-                  <h3>{{ $plane->name }}</h3>
+                  <h3><?php echo e($plane->name); ?></h3>
                 </div>
               </div>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
           </div>
                
 
           <!-- Controls -->
-          @if(count($carousel_images) > 1)
+          <?php if(count($carousel_images) > 1): ?>
           <a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev">
             <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
             <span class="sr-only">Previous</span>
@@ -475,11 +474,11 @@
             <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
             <span class="sr-only">Next</span>
           </a>
-          @endif
+          <?php endif; ?>
         </div>
-        @else
+        <?php else: ?>
           <div class="text-center"><i class="fa fa-picture-o fa-4x"></i></div>
-        @endif
+        <?php endif; ?>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -512,14 +511,14 @@
   
 </script>
 
-@if(config('app.debug'))
+<?php if(config('app.debug')): ?>
 <script>
   // console.group('Flight calculation debug');
-  // console.log('Flights from backend', @json($flights));
-  // console.log('Route match debug', @json($route_debug ?? []));
+  // console.log('Flights from backend', <?php echo json_encode($flights, 15, 512) ?>);
+  // console.log('Route match debug', <?php echo json_encode($route_debug ?? [], 15, 512) ?>);
   console.groupEnd();
 </script>
-@endif
+<?php endif; ?>
 
 <script>
   $(document).ready(function(){
@@ -530,4 +529,6 @@
 });
 </script>
 
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.plane_header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\accretion-flying\airports_web-master-flight\resources\views/plane_details.blade.php ENDPATH**/ ?>

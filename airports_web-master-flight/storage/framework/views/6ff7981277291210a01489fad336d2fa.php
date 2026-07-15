@@ -1,14 +1,13 @@
-@extends('layouts.plane_header')
-@section('content')
+<?php $__env->startSection('content'); ?>
    <header>
     <div class="header-content">
       <div class="header-content-inner">
         <form id="search-planes" role="form" method="GET" action="">
-          <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
-          <input id="old-lat" type="hidden" name="old-lat" value="{{ $lat }}" />
-          <input id="old-long" type="hidden" name="old-long" value="{{ $long }}" />
-          <input id="old-location" type="hidden" name="old-location" value="{{ $location_name }}" />
-          <input id="old-flower-shower-time" type="hidden" name="flower-shower-time" value="{{ isset($flower_shower_time) ? $flower_shower_time : 0 }}" />
+          <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>"> 
+          <input id="old-lat" type="hidden" name="old-lat" value="<?php echo e($lat); ?>" />
+          <input id="old-long" type="hidden" name="old-long" value="<?php echo e($long); ?>" />
+          <input id="old-location" type="hidden" name="old-location" value="<?php echo e($location_name); ?>" />
+          <input id="old-flower-shower-time" type="hidden" name="flower-shower-time" value="<?php echo e(isset($flower_shower_time) ? $flower_shower_time : 0); ?>" />
         </form>
 				<div class="row">
 					<div class="col-md-12 no-padding">
@@ -326,4 +325,6 @@
 		});
   });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.plane_header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\accretion-flying\airports_web-master-flight\resources\views/plane_list_by_flower_shower.blade.php ENDPATH**/ ?>

@@ -68,6 +68,11 @@ foreach ([
   legacy_controller_routes($prefix, $controller);
 }
 
+Route::options('/api/v1/machines/search', 'Api\MachineSearchController@options');
+Route::match(['GET', 'POST'], '/api/v1/machines/search', 'Api\MachineSearchController@search');
+Route::options('/api/v1/airports', 'Api\AirportSearchController@options');
+Route::get('/api/v1/airports', 'Api\AirportSearchController@index');
+
 Route::get('/uploads/{path}', function ($path) {
   $uploads_root = realpath(public_path('uploads'));
   $normalized_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
