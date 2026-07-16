@@ -45,6 +45,56 @@
   font: inherit;
 }
 
+.aa-airport-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.aa-map-button {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid #d9dde4;
+  border-radius: 6px;
+  background: #fff;
+  color: #101820;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.aa-map-button:hover {
+  background: #f4f6f8;
+}
+
+.aa-airport-modal {
+  width: min(860px, 100%);
+}
+
+.aa-airport-modal-body {
+  padding: 18px 20px 20px;
+}
+
+.aa-map-status {
+  margin-bottom: 10px;
+  color: #4f5b67;
+  font-weight: 700;
+}
+
+.aa-airport-map {
+  height: 420px;
+  width: 100%;
+  border: 1px solid #d9dde4;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.aa-map-actions {
+  margin-top: 14px;
+  justify-content: flex-end;
+}
+
 .aa-filter-actions {
   display: flex;
   gap: 10px;
@@ -330,6 +380,14 @@
 }
 
 @media (max-width: 720px) {
+    .aa-airport-control {
+      grid-template-columns: 1fr;
+    }
+
+    .aa-airport-map {
+      height: 320px;
+    }
+
   .aa-machine-filter,
   .aa-machine-grid,
   .aa-booking-form,
