@@ -724,12 +724,32 @@
     '</div>';
   }
 
-  function quoteRows(machine, quote) {
-    if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
-      return '<div class="aa-machine-details">' + quote.display_rows.map(function(item) {
-        return row(item.label || '', item.value);
-      }).join('') + '</div>';
+  function formatMoneyDisplay(label, value) {
+  var text = String(value === null || value === undefined ? '' : value);
+  var isMoneyRow = /cost|price|charges|sub total|grand total|gst|medical/i.test(String(label || ''));
+
+  if(!isMoneyRow) {
+    return text;
+  }
+
+  return text.replace(/₹\s*([0-9,]+(?:\.\d+)?)|(^|[^0-9.])([0-9,]{4,}(?:\.\d+)?)(?![0-9.])/g, function(match, rupeeAmount, prefix, bareAmount) {
+    var amount = rupeeAmount || bareAmount;
+    var number = Number(String(amount).replace(/,/g, ''));
+
+    if(!isFinite(number)) {
+      return match;
     }
+
+    return (rupeeAmount ? '' : (prefix || '')) + String.fromCharCode(8377) + Math.round(number).toLocaleString('en-IN');
+  });
+}
+
+  function quoteRows(machine, quote) {
+if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
+  return '<div class="aa-machine-details">' + quote.display_rows.map(function(item) {
+    return row(item.label || '', formatMoneyDisplay(item.label || '', item.value));
+  }).join('') + '</div>';
+}
 
     var gstLabel = 'GST' + (quote.gst_rate !== undefined && quote.gst_rate !== null ? ' (' + Number(quote.gst_rate).toLocaleString('en-IN') + '%)' : '');
     var isAirAmbulance = Number(machine.type_id || 0) === 3;
