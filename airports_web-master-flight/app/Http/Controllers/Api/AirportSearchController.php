@@ -20,11 +20,15 @@ class AirportSearchController extends Controller
     }
 
     try {
-      $columns = Schema::getColumnListing('airport');
-      $query = Airport::where('status', 1);
-      $search = trim((string) $request->query('q', $request->query('search', '')));
-      $limit = (int) $request->query('limit', 500);
-      $limit = max(1, min($limit, 1000));
+    $columns = Schema::getColumnListing('airport');
+    $query = Airport::where('status', 1);
+    $search = trim((string) $request->query('q', $request->query('search', '')));
+    $limit = (int) $request->query('limit', 500);
+    $limit = max(1, min($limit, 1000));
+
+    $lat = $request->query('latitude', $request->query('lat', null));
+    $lng = $request->query('longitude', $request->query('lng', null));
+    $nearest = (string) $request->query('nearest', '') === '1';
 
       if($search !== ''){
         $query->where(function($sub_query) use ($search, $columns) {
@@ -38,9 +42,25 @@ class AirportSearchController extends Controller
         });
       }
 
+    if($nearest && is_numeric($lat) && is_numeric($lng)){
+      $lat = (float) $lat;
+      $lng = (float) $lng;
+      $limit = 1;
+
+      $query
+        ->whereNotNull('latitude')
+        ->whereNotNull('longitude')
+        ->select('*')
+        ->selectRaw(
+          '(6371 * acos(least(1, greatest(-1, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) as distance_km',
+          [$lat, $lng, $lat]
+        )
+        ->orderBy('distance_km');
+    } else {
       if(in_array('city_name', $columns, true)){
         $query->orderBy('city_name');
       }
+    }
 
       $airports = $query
         ->orderBy('name')
@@ -58,6 +78,7 @@ class AirportSearchController extends Controller
             'icao' => isset($airport->icao) ? $airport->icao : '',
             'latitude' => is_numeric($airport->latitude) ? (float) $airport->latitude : null,
             'longitude' => is_numeric($airport->longitude) ? (float) $airport->longitude : null,
+            'distance_km' => isset($airport->distance_km) ? round((float) $airport->distance_km, 2) : null,
             'gt' => isset($airport->gt) && is_numeric($airport->gt) ? (float) $airport->gt : 0,
           ];
         })
@@ -65,10 +86,13 @@ class AirportSearchController extends Controller
 
       return $this->apiResponse([
         'success' => true,
-        'meta' => [
-          'count' => $airports->count(),
-          'search' => $search,
-        ],
+       'meta' => [
+        'count' => $airports->count(),
+        'search' => $search,
+        'nearest' => $nearest,
+        'latitude' => is_numeric($lat) ? (float) $lat : null,
+        'longitude' => is_numeric($lng) ? (float) $lng : null,
+      ],
         'data' => $airports,
       ], 200, $request);
     } catch(Exception $exception) {
