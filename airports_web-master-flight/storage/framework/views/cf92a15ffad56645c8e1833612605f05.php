@@ -1,5 +1,4 @@
-@extends('layouts.admin_header')
-@section('content')
+<?php $__env->startSection('content'); ?>
   <section class="content plane-container">
     <div class="row">
       <div class="col-md-12">
@@ -8,72 +7,73 @@
             <h3 class="box-title">Edit Machine</h3>
           </div>     
             
-          <form id="form-add-plane" role="form" method="POST" action="{{ url('/plane/edit') }}">
-            {{ csrf_field() }}
-            <input type="hidden" name="_token" value="{{ csrf_token() }}"> 
+          <form id="form-add-plane" role="form" method="POST" action="<?php echo e(url('/plane/edit')); ?>">
+            <?php echo e(csrf_field()); ?>
+
+            <input type="hidden" name="_token" value="<?php echo e(csrf_token()); ?>"> 
             <div class="box-body">
               <div class="row">
                 <div class="form-group col-md-3">
                   <label for="plane">Machine Name</label>
-                  <input type="hidden" name="plane-id" value="{{ $plane->id }}">
-                  <input type="text" class="form-control" id="plane" placeholder="Enter Machine name" name="plane" value="{{ $plane->name }}">
-                  <span class="error-font text-danger">{{ $errors->first('plane')}}</span>
+                  <input type="hidden" name="plane-id" value="<?php echo e($plane->id); ?>">
+                  <input type="text" class="form-control" id="plane" placeholder="Enter Machine name" name="plane" value="<?php echo e($plane->name); ?>">
+                  <span class="error-font text-danger"><?php echo e($errors->first('plane')); ?></span>
                 </div>
                 <div class="form-group col-md-3">
                   <label for="Call_Sign">Call Sign(VT)</label>
-                  <input type="text" class="form-control" id="Call_Sign" placeholder="Enter Call Sign" name="Call_Sign" value="{{ old('Call_Sign', $plane->Call_Sign) }}" required>
-                  <span class="error-font text-danger">{{ $errors->first('Call_Sign')}}</span>
+                  <input type="text" class="form-control" id="Call_Sign" placeholder="Enter Call Sign" name="Call_Sign" value="<?php echo e(old('Call_Sign', $plane->Call_Sign)); ?>" required>
+                  <span class="error-font text-danger"><?php echo e($errors->first('Call_Sign')); ?></span>
                 </div>
                  <div class="form-group col-md-3">
                   <label for="type">Type</label>
                   <select class="form-control select2" id="type" name="type">
-                    @foreach($plane_types as $id => $type)
-                      @if($plane->type_id == $id)
-                        <option value="{{$id}}" selected>{{$type}}</option>
-                      @else
-                        <option value="{{$id}}">{{$type}}</option>
-                      @endif
-                    @endforeach
+                    <?php $__currentLoopData = $plane_types; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $type): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                      <?php if($plane->type_id == $id): ?>
+                        <option value="<?php echo e($id); ?>" selected><?php echo e($type); ?></option>
+                      <?php else: ?>
+                        <option value="<?php echo e($id); ?>"><?php echo e($type); ?></option>
+                      <?php endif; ?>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </select>
-                   <span class="error-font text-danger">{{ $errors->first('type')}}</span>
+                   <span class="error-font text-danger"><?php echo e($errors->first('type')); ?></span>
                 </div>
                 <div class="form-group col-md-3">
                   <label for="subtype">SubType</label>
                   <select class="form-control select2" id="subtype" name="subtype">
                     <option value="">Select</option>
-                    @foreach($plane_subtypes as $id => $plane_subtype)
-                        <option value="{{$plane_subtype->id}}" {{  $plane->subtype == $plane_subtype->id ? 'selected' : '' }}>{{$plane_subtype->sub_type}}</option>
-                    @endforeach
+                    <?php $__currentLoopData = $plane_subtypes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $plane_subtype): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($plane_subtype->id); ?>" <?php echo e($plane->subtype == $plane_subtype->id ? 'selected' : ''); ?>><?php echo e($plane_subtype->sub_type); ?></option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                   </select>
-                   <span class="error-font text-danger">{{ $errors->first('subtype')}}</span>
+                   <span class="error-font text-danger"><?php echo e($errors->first('subtype')); ?></span>
                 </div>
               </div>     
               <div class="row">
                 <div class="form-group col-md-4">
                   <label for="speed_coefficient">Take Off / Landing Speed Coefficient</label>
-                  <input type="text" class="form-control" id="speed_coefficient" placeholder="Enter speed coefficient" name="speed_coefficient" value="{{ $plane->speed_coefficient }}">
-                  <span class="error-font text-danger">{{ $errors->first('price')}}</span>
+                  <input type="text" class="form-control" id="speed_coefficient" placeholder="Enter speed coefficient" name="speed_coefficient" value="<?php echo e($plane->speed_coefficient); ?>">
+                  <span class="error-font text-danger"><?php echo e($errors->first('price')); ?></span>
                 </div>
                 <div class="form-group col-md-4">
                   <label for="price">Price Per Hour</label>
-                  <input type="text" class="form-control" id="price" placeholder="Enter Machine price" name="price" value="{{ $plane->price_per_hour }}">
-                  <span class="error-font text-danger">{{ $errors->first('price')}}</span>
+                  <input type="text" class="form-control" id="price" placeholder="Enter Machine price" name="price" value="<?php echo e($plane->price_per_hour); ?>">
+                  <span class="error-font text-danger"><?php echo e($errors->first('price')); ?></span>
                 </div>
                 <div class="form-group col-md-4">
                   <label for="seats">Seats</label>
-                  <input type="text" class="form-control" id="seats" placeholder="Enter number of seats" name="seats" value="{{ $plane->seats }}">
-                  <span class="error-font text-danger">{{ $errors->first('seats')}}</span>
+                  <input type="text" class="form-control" id="seats" placeholder="Enter number of seats" name="seats" value="<?php echo e($plane->seats); ?>">
+                  <span class="error-font text-danger"><?php echo e($errors->first('seats')); ?></span>
                 </div>
               </div> 
               <div class="row">
                 <div class="form-group col-md-4">
                  <label for="speed">Speed Per Hour</label>
-                  <input type="text" class="form-control" id="speed" placeholder="Enter Machine speed" name="speed" value="{{ $plane->speed }}">
-                  <span class="error-font text-danger">{{ $errors->first('speed')}}</span>
+                  <input type="text" class="form-control" id="speed" placeholder="Enter Machine speed" name="speed" value="<?php echo e($plane->speed); ?>">
+                  <span class="error-font text-danger"><?php echo e($errors->first('speed')); ?></span>
                 </div>
                 <div class="form-group col-md-4">
                   <label>Note</label>
-                  <textarea name="note" class="form-control" rows="2" placeholder="Enter description in short">{{ $plane->note }}</textarea>
+                  <textarea name="note" class="form-control" rows="2" placeholder="Enter description in short"><?php echo e($plane->note); ?></textarea>
                 </div>
               </div>
               <div class="row">
@@ -82,14 +82,14 @@
                   <div class="radio">
                     <label class="radio-inline">
                         <input type="radio" name="lavatory" value="1"
-                            {{ old('lavatory', $plane->lavatory) == 1 ? 'checked' : '' }}>
+                            <?php echo e(old('lavatory', $plane->lavatory) == 1 ? 'checked' : ''); ?>>
                         Yes
                     </label>
                   </div>
                   <div class="radio">
                     <label class="radio-inline">
                         <input type="radio" name="lavatory" value="0"
-                            {{ old('lavatory', $plane->lavatory) == 0 ? 'checked' : '' }}>
+                            <?php echo e(old('lavatory', $plane->lavatory) == 0 ? 'checked' : ''); ?>>
                         No
                     </label>
                   </div>
@@ -111,18 +111,18 @@
                           <label for="owner">Owner</label>
                         
                           <input type="text" id="owner" name="owner" class="form-control" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->name;} ?>" tabindex="5" min="0" required>
-                            <input type="hidden" id="owner-id" name="owner-id" value="{{$owner_id}}">
-                           <span class="error-font text-danger">{{ $errors->first('owner')}}</span>
+                            <input type="hidden" id="owner-id" name="owner-id" value="<?php echo e($owner_id); ?>">
+                           <span class="error-font text-danger"><?php echo e($errors->first('owner')); ?></span>
                         </div>
                         <div class="form-group col-md-4">
                           <label for="owner">Contact</label>
                            <input type="text" class="form-control" id="contact" name="contact" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->contact_number_1;} ?>">
-                            <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('contact')}}</span>
+                            <span class="error-font text-danger" style="color: #c41f45;"><?php echo e($errors->first('contact')); ?></span>
                         </div>
                         <div class="form-group col-md-4">
                           <label for="owner">Email</label>
                            <input type="text" class="form-control" id="email" name="email" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->email_1;} ?>">
-                         <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('email')}}</span>
+                         <span class="error-font text-danger" style="color: #c41f45;"><?php echo e($errors->first('email')); ?></span>
                         </div>
                       </div> 
                       <div class="row form-group">
@@ -137,17 +137,17 @@
                                 <div class="form-group col-md-4">
                                   <label for="owner">Name</label>
                                   <input type="text" class="form-control" id="name" name="name" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->sec_name;} ?>">
-                                    <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('name')}}</span>
+                                    <span class="error-font text-danger" style="color: #c41f45;"><?php echo e($errors->first('name')); ?></span>
                                 </div>
                                 <div class="form-group col-md-4">
                                   <label for="number">Contact</label>
                                   <input type="text" class="form-control" id="number" name="number" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->contact;} ?>">
-                                    <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('number')}}</span>
+                                    <span class="error-font text-danger" style="color: #c41f45;"><?php echo e($errors->first('number')); ?></span>
                                 </div>
                                 <div class="form-group col-md-4">
                                   <label for="email-id">Email</label>
                                   <input type="text" class="form-control" id="email-id" name="email-id" value="<?php if(isset($owners[$owner_id])) {echo $owners[$owner_id]->email;} ?>">
-                                    <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('email')}}</span>
+                                    <span class="error-font text-danger" style="color: #c41f45;"><?php echo e($errors->first('email')); ?></span>
                                 </div>
                             </div> 
                           </div> 
@@ -169,34 +169,34 @@
                           <label for="city">City</label>
                           <select class="form-control select2" id="city" name="city">
 														<option value="0">Please select</option>
-                            @foreach($cities as $id => $city)
-                              @if($plane->city_id == $id)
-                                <option value="{{$id}}" selected>{{$city}}</option>
-                              @else
-                                <option value="{{$id}}">{{$city}}</option>
-                              @endif
-                            @endforeach
+                            <?php $__currentLoopData = $cities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $city): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                              <?php if($plane->city_id == $id): ?>
+                                <option value="<?php echo e($id); ?>" selected><?php echo e($city); ?></option>
+                              <?php else: ?>
+                                <option value="<?php echo e($id); ?>"><?php echo e($city); ?></option>
+                              <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                           </select>
-                          <span id="city-error" class="error-font text-danger">{!! $errors->first('city') !!}</span>
+                          <span id="city-error" class="error-font text-danger"><?php echo $errors->first('city'); ?></span>
                         </div>
                         <div class="form-group col-md-6">
                           <label for="city">Airport</label>
                           <select class="form-control" id="airport" name="airport">
 														<option value="0"></option>
-                            @foreach($airports as $airport)
-                              <option data-id="{{ $airport->id }}" value="{{$airport->id}}" @if(old('airport', $plane->airport_id) == $airport->id) selected @endif>{{$airport->name}}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                              <option data-id="<?php echo e($airport->id); ?>" value="<?php echo e($airport->id); ?>" <?php if(old('airport', $plane->airport_id) == $airport->id): ?> selected <?php endif; ?>><?php echo e($airport->name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                           </select>
                         </div>
 											</div>
                       <!-- <div class="row form-group">
                         <div class="col-md-6">
                           <label for="latitude">Latitude</label>
-                          <input type="text" class="form-control" id="lat" name="lat" value="{{ $plane->latitude }}" readOnly>
+                          <input type="text" class="form-control" id="lat" name="lat" value="<?php echo e($plane->latitude); ?>" readOnly>
                         </div>               
                         <div class="col-md-6">
                           <label for="longitude">Longitude</label>
-                          <input type="text" class="form-control" id="long" name="long" value="{{ $plane->longitude }}" readOnly>
+                          <input type="text" class="form-control" id="long" name="long" value="<?php echo e($plane->longitude); ?>" readOnly>
                         </div>               
                       </div>  
                       <div class="row form-group">
@@ -208,7 +208,7 @@
                         </div> 
                       </div> -->
 
-                          @include('partials.location_map', [
+                          <?php echo $__env->make('partials.location_map', [
                 'latInputId' => 'lat',
                 'lngInputId' => 'long',
                 'mapId' => 'map',
@@ -216,7 +216,7 @@
                 'lngInputName' => 'long',
                 'latInputValue' => old('lat', old('latitude', $plane->latitude)),
                 'lngInputValue' => old('long', old('longitude', $plane->longitude))
-              ])
+              ], array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?>
                     </div>               
                   </div>               
                 </div> 
@@ -230,37 +230,37 @@
                       <div class="row form-group">
                         <div class="col-md-4 hide">
                           <label for="gt">Ground Time</label>
-                          <input type="text" class="form-control" id="gt" name="gt" value="{{ $plane->gt }}">
+                          <input type="text" class="form-control" id="gt" name="gt" value="<?php echo e($plane->gt); ?>">
                         </div> 
                         <div class="col-md-6">
                           <label for="from-date">From Date *</label>
                           <div class="input-group date" id="fromdate">								
-                            <input type="text" class="form-control from-date" id="from-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ ($plane->from_date != '0000-00-00 00:00:00' ? date('d-m-Y', strtotime($plane->from_date)) : '') }}">
+                            <input type="text" class="form-control from-date" id="from-date" name="from-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="<?php echo e(($plane->from_date != '0000-00-00 00:00:00' ? date('d-m-Y', strtotime($plane->from_date)) : '')); ?>">
                             <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                             </span>
                           </div>
-                          <span class="error-font text-danger">{{ $errors->first('from-date') }}</span>
+                          <span class="error-font text-danger"><?php echo e($errors->first('from-date')); ?></span>
                         </div>  
                         <div class="col-md-6">
                           <label for="to-date">To Date *</label>
                           <div class="input-group date" id="todate">								
-                            <input type="text" class="form-control to-date" id="to-date" name="to-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="{{ ($plane->to_date != '0000-00-00 00:00:00' ? date('d-m-Y', strtotime($plane->to_date)) : '') }}">
+                            <input type="text" class="form-control to-date" id="to-date" name="to-date" placeholder="dd-mm-yyyy" data-date-format="DD-MM-YYYY" value="<?php echo e(($plane->to_date != '0000-00-00 00:00:00' ? date('d-m-Y', strtotime($plane->to_date)) : '')); ?>">
                             <span class="input-group-addon">
                               <span class="glyphicon glyphicon-calendar"></span>
                             </span>
                           </div>
-                          <span class="error-font text-danger">{{ $errors->first('to-date') }}</span>
+                          <span class="error-font text-danger"><?php echo e($errors->first('to-date')); ?></span>
                         </div> 
                       </div> 
                       <div class="row form-group">
                         <div class="col-md-6">
                           <label for="latitude-hel">Latitude</label>
-                          <input type="text" class="form-control" id="lat-hel" name="lat-hel" value="{{ $plane->temp_latitude }}">
+                          <input type="text" class="form-control" id="lat-hel" name="lat-hel" value="<?php echo e($plane->temp_latitude); ?>">
                         </div>               
                         <div class="col-md-6">
                           <label for="longitude-hel">Longitude</label>
-                          <input type="text" class="form-control" id="long-hel" name="long-hel" value="{{ $plane->temp_longitude }}">
+                          <input type="text" class="form-control" id="long-hel" name="long-hel" value="<?php echo e($plane->temp_longitude); ?>">
                         </div>                
                       </div>  
                       <div class="row form-group">
@@ -268,23 +268,23 @@
                           <label for="city-hel">City</label>
                           <select class="form-control select2" id="city-hel" style="width:100%" name="city-hel">
 														<option value="0">Please select</option>
-                            @foreach($cities as $id => $city)
-                              @if($plane->temporary_city_id == $id)
-                                <option value="{{$id}}" selected>{{$city}}</option>
-                              @else
-                                <option value="{{$id}}">{{$city}}</option>
-                              @endif
-                            @endforeach
+                            <?php $__currentLoopData = $cities; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $id => $city): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                              <?php if($plane->temporary_city_id == $id): ?>
+                                <option value="<?php echo e($id); ?>" selected><?php echo e($city); ?></option>
+                              <?php else: ?>
+                                <option value="<?php echo e($id); ?>"><?php echo e($city); ?></option>
+                              <?php endif; ?>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                           </select>
-                          <span id="city-hel-error" class="error-font text-danger">{!! $errors->first('city-hel') !!}</span>
+                          <span id="city-hel-error" class="error-font text-danger"><?php echo $errors->first('city-hel'); ?></span>
                         </div>
                         <div class="form-group col-md-6">
                           <label for="airport-hel">Airport</label>
                           <select class="form-control" id="airport-hel" name="airport-hel">
 														<option value="0"></option>
-                            @foreach($airports as $airport)
-                              <option data-id="{{ $airport->id }}" value="{{$airport->id}}" @if(old('airport-hel', $plane->temporary_airport_id) == $airport->id) selected @endif>{{$airport->name}}</option>
-                            @endforeach
+                            <?php $__currentLoopData = $airports; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $airport): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                              <option data-id="<?php echo e($airport->id); ?>" value="<?php echo e($airport->id); ?>" <?php if(old('airport-hel', $plane->temporary_airport_id) == $airport->id): ?> selected <?php endif; ?>><?php echo e($airport->name); ?></option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                           </select>
                         </div>
 											</div>
@@ -324,13 +324,13 @@
                                 ?>
                                 </span> 
                                 <input class="fileupload" type="file" name="files[]" data-id="1" data-url="/plane/upload">
-                                <input id="image-1" type="hidden" name="display-image" value="{{ old('display-image', $plane->display_image) }}">
+                                <input id="image-1" type="hidden" name="display-image" value="<?php echo e(old('display-image', $plane->display_image)); ?>">
                                 <div id="progress-1">
                                   <div class="bar" style="width: 0%;"></div>
                                 </div>
                             </label>
                               <div>
-                                <span class="error-font text-danger">{{ $errors->first('display-image')}}</span>
+                                <span class="error-font text-danger"><?php echo e($errors->first('display-image')); ?></span>
                               </div>
                             </div>
                           </div>
@@ -349,42 +349,42 @@
                     <div class="box-body">	
                       <div class="row">
                          <?php $i=2;?>
-                          @foreach($plane_images as $image_id => $plane_image)
+                          <?php $__currentLoopData = $plane_images; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $image_id => $plane_image): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                             <div class="col-md-3 ">
                               <div class="form-group">
-                                <label id="image-box-{{$i}}" class="button image-box" style="
+                                <label id="image-box-<?php echo e($i); ?>" class="button image-box" style="
                                   <?php if($plane_images !="") {
                                     echo "background-image: url('/uploads/".$plane_image ."'); background-color: #FFF;"; }
-                                    ?>"><span class="dummy-image-{{$i}} <?php if($plane_image != "" ) {echo 'hide';}?>"><i class="fa fa-picture-o fa-4x fa-picture-set"></i></span>
+                                    ?>"><span class="dummy-image-<?php echo e($i); ?> <?php if($plane_image != "" ) {echo 'hide';}?>"><i class="fa fa-picture-o fa-4x fa-picture-set"></i></span>
                                   <?php					
                                   if($plane_image != "") {?>
-                                    <a id="delete-image-modal-link-{{$i}}" class="delete-image" href="#delete-image-modal" data-toggle="modal" data-dismiss="modal"  data-target="#delete-image-modal" data-image-id="<?php echo $image_id ; ?>"></a>
+                                    <a id="delete-image-modal-link-<?php echo e($i); ?>" class="delete-image" href="#delete-image-modal" data-toggle="modal" data-dismiss="modal"  data-target="#delete-image-modal" data-image-id="<?php echo $image_id ; ?>"></a>
                                   <?php } else { ?>									
-                                    <a id="delete-image-modal-link-{{$i}}" class="delete-image hide" data-image-id="0" data-index="{{$i}}"></a>
+                                    <a id="delete-image-modal-link-<?php echo e($i); ?>" class="delete-image hide" data-image-id="0" data-index="<?php echo e($i); ?>"></a>
                                   <?php } ?>																	
-                                    <input class="fileupload" type="file" name="files[]" data-id="{{$i}}" data-url="/plane/upload">
-                                    <input id="image-{{$i}}" type="hidden" name="images[]" value="{{ old('images.' . ($i - 2), $plane_image) }}">
-                                  <div id="progress-{{$i}}">
+                                    <input class="fileupload" type="file" name="files[]" data-id="<?php echo e($i); ?>" data-url="/plane/upload">
+                                    <input id="image-<?php echo e($i); ?>" type="hidden" name="images[]" value="<?php echo e(old('images.' . ($i - 2), $plane_image)); ?>">
+                                  <div id="progress-<?php echo e($i); ?>">
                                     <div class="bar" style="width: 0%;"></div>
                                   </div>
                                   </label>
                               </div>
                             </div> 
                             <?php $i++;  ?>
-                          @endforeach
-                          @for($j=$i; $j<6; $j++)
+                          <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                          <?php for($j=$i; $j<6; $j++): ?>
                             <div class="col-md-3">
                               <div class="form-group">
-                                <label id="image-box-{{$j}}" class="button image-box"><span><i class="fa fa-picture-o fa-4x fa-picture-set"></i></span> 
-                                  <input class="fileupload" type="file" name="files[]" data-id="{{$j}}" data-url="/plane/upload">
-                                  <input id="image-{{$j}}" type="hidden" name="images[]" value="{{ old('images.' . ($j - 2)) }}">
-                                <div id="progress-{{$j}}">
+                                <label id="image-box-<?php echo e($j); ?>" class="button image-box"><span><i class="fa fa-picture-o fa-4x fa-picture-set"></i></span> 
+                                  <input class="fileupload" type="file" name="files[]" data-id="<?php echo e($j); ?>" data-url="/plane/upload">
+                                  <input id="image-<?php echo e($j); ?>" type="hidden" name="images[]" value="<?php echo e(old('images.' . ($j - 2))); ?>">
+                                <div id="progress-<?php echo e($j); ?>">
                                   <div class="bar" style="width: 0%;"></div>
                                 </div>
                                 </label>
                               </div>
                             </div> 
-                        @endfor
+                        <?php endfor; ?>
                       </div>																 
                     </div>             
                   </div>               
@@ -406,7 +406,7 @@
   <link rel="stylesheet" href="https://maps.locationiq.com/v2/libs/leaflet-geocoder/1.9.6/leaflet-geocoder-locationiq.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.3.3/leaflet.js"></script>
   <script src="https://maps.locationiq.com/v2/libs/leaflet-geocoder/1.9.6/leaflet-geocoder-locationiq.min.js"></script>
-  <script src="{{ asset('js/location-map.js') }}"></script>
+  <script src="<?php echo e(asset('js/location-map.js')); ?>"></script>
 
   <!-- <script>
     $(function() {
@@ -520,8 +520,8 @@
         }
       });
 
-      var selectedMainAirportId = {{ isset($plane->airport_id) ? $plane->airport_id : 'null' }};
-      var selectedHelAirportId  = {{ isset($plane->temporary_airport_id) ? $plane->temporary_airport_id : 'null' }};
+      var selectedMainAirportId = <?php echo e(isset($plane->airport_id) ? $plane->airport_id : 'null'); ?>;
+      var selectedHelAirportId  = <?php echo e(isset($plane->temporary_airport_id) ? $plane->temporary_airport_id : 'null'); ?>;
 
       // City Dropdown → Load Airports via AJAX
       function normalizeAirportResponse(data) {
@@ -668,4 +668,6 @@
   
   <!-- OLD SCRIPT -->
   
-@stop
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.admin_header', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\xampp\htdocs\accretion-flying\airports_web-master-flight\resources\views/admin/edit_plane.blade.php ENDPATH**/ ?>

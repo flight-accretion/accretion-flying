@@ -109,11 +109,12 @@
                         <div class="form-group col-md-4">
                           <label for="owner">Contact</label>
                            <input type="text" class="form-control" id="contact" name="contact" value="{{ old('contact') }}">
-                           <span class="error-font text-danger contact-error"></span>
+                           <span class="error-font text-danger contact-error">{{ $errors->first('contact')}}</span>
                         </div>
                         <div class="form-group col-md-4">
                           <label for="owner">Email</label>
                            <input type="text" class="form-control" id="email" name="email" value="{{ old('email') }}">
+                            <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('email')}}</span>
                         </div>
                       </div> 
                       <div class="row form-group">
@@ -128,14 +129,17 @@
                                 <div class="form-group col-md-4">
                                   <label for="owner">Name</label>
                                   <input type="text" class="form-control" id="name" name="name" value="{{ old('name') }}">
+                            <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('name')}}</span>
                                 </div>
                                 <div class="form-group col-md-4">
                                   <label for="number">Contact</label>
                                   <input type="text" class="form-control" id="number" name="number" value="{{ old('number') }}">
+                            <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('number')}}</span>
                                 </div>
                                 <div class="form-group col-md-4">
                                   <label for="email-id">Email</label>
                                   <input type="text" class="form-control" id="email-id" name="email-id" value="{{ old('email-id') }}">
+                            <span class="error-font text-danger" style="color: #c41f45;">{{ $errors->first('email-id')}}</span>
                                 </div>
                             </div> 
                           </div> 

@@ -599,12 +599,32 @@
     return true;
   }
 
-   function nearestAirportUrl(widget, lat, lng) {
+  function nearestAirportUrl(widget, lat, lng) {
     var url = widget.apiBase + '/api/v1/airports?nearest=1&limit=1&latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lng);
     if(widget.apiKey) {
       url += '&api_key=' + encodeURIComponent(widget.apiKey);
     }
     return url;
+  }
+
+  function geocodeLocationUrl(query) {
+    return 'https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=' + encodeURIComponent(query);
+  }
+
+  function setAirportMapSelection(widget, modal, lat, lng, label) {
+    modal.setAttribute('data-latitude', lat);
+    modal.setAttribute('data-longitude', lng);
+    modal.querySelector('.aa-map-status').textContent = (label ? 'Selected: ' + label + ' ' : 'Selected: ') + '(' + Number(lat).toFixed(5) + ', ' + Number(lng).toFixed(5) + ')';
+
+    if(!widget.airportMap) {
+      return;
+    }
+
+    if(!widget.airportMarker) {
+      widget.airportMarker = L.marker([lat, lng]).addTo(widget.airportMap);
+    } else {
+      widget.airportMarker.setLatLng([lat, lng]);
+    }
   }
 
   function openAirportMap(widget, fieldName, targetInput) {
@@ -629,15 +649,7 @@
         widget.airportMap.on('click', function(event) {
           var lat = event.latlng.lat;
           var lng = event.latlng.lng;
-          modal.setAttribute('data-latitude', lat);
-          modal.setAttribute('data-longitude', lng);
-          modal.querySelector('.aa-map-status').textContent = 'Selected: ' + lat.toFixed(5) + ', ' + lng.toFixed(5);
-
-          if(!widget.airportMarker) {
-            widget.airportMarker = L.marker([lat, lng]).addTo(widget.airportMap);
-          } else {
-            widget.airportMarker.setLatLng([lat, lng]);
-          }
+          setAirportMapSelection(widget, modal, lat, lng, '');
         });
       }
 
@@ -657,6 +669,10 @@
           '<button class="aa-close" type="button" aria-label="Close">&times;</button>' +
         '</div>' +
         '<div class="aa-airport-modal-body">' +
+          '<form class="aa-map-search" role="search">' +
+            '<input class="aa-map-search-input" type="search" placeholder="Search location" autocomplete="off">' +
+            '<button class="aa-button aa-map-search-button" type="submit">Search</button>' +
+          '</form>' +
           '<div class="aa-map-status">Click on the map, then press Select Airport.</div>' +
           '<div class="aa-airport-map"></div>' +
           '<div class="aa-filter-actions aa-map-actions">' +
@@ -674,6 +690,36 @@
     });
     modal.addEventListener('click', function(event) {
       if(event.target === modal) modal.classList.remove('is-open');
+    });
+    modal.querySelector('.aa-map-search').addEventListener('submit', function(event) {
+      event.preventDefault();
+      var input = modal.querySelector('.aa-map-search-input');
+      var query = input ? input.value.trim() : '';
+
+      if(!query) {
+        modal.querySelector('.aa-map-status').textContent = 'Please enter a location to search.';
+        return;
+      }
+
+      modal.querySelector('.aa-map-status').textContent = 'Searching location...';
+      fetchJson(geocodeLocationUrl(query)).then(function(results) {
+        var place = Array.isArray(results) && results.length ? results[0] : null;
+
+        if(!place || !isFinite(Number(place.lat)) || !isFinite(Number(place.lon))) {
+          modal.querySelector('.aa-map-status').textContent = 'No location found. Try a nearby city, area, or landmark.';
+          return;
+        }
+
+        var lat = Number(place.lat);
+        var lng = Number(place.lon);
+        setAirportMapSelection(widget, modal, lat, lng, place.display_name || query);
+
+        if(widget.airportMap) {
+          widget.airportMap.setView([lat, lng], 12);
+        }
+      }).catch(function(error) {
+        modal.querySelector('.aa-map-status').textContent = error.message || 'Unable to search location.';
+      });
     });
     modal.querySelector('.aa-map-select').addEventListener('click', function() {
       var lat = modal.getAttribute('data-latitude');

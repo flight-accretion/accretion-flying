@@ -82,6 +82,28 @@
   font-weight: 700;
 }
 
+.aa-map-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.aa-map-search-input {
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #d9dde4;
+  border-radius: 6px;
+  background: #fff;
+  color: #101820;
+  font: inherit;
+}
+
+.aa-map-search-button {
+  white-space: nowrap;
+}
+
 .aa-airport-map {
   height: 420px;
   width: 100%;
@@ -380,6 +402,10 @@
 }
 
 @media (max-width: 720px) {
+    .aa-map-search {
+      grid-template-columns: 1fr;
+    }
+
     .aa-airport-map {
       height: 320px;
     }
