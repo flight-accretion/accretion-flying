@@ -19,6 +19,8 @@ class MachineApiSearchService
     'private-charter-helicopter' => 2,
     'private-helicopter' => 2,
     'helicopter' => 2,
+    'flower-shower' => 2,
+    'flower shower' => 2,
     'air-ambulance' => 3,
     'air_ambulance' => 3,
     'air ambulance' => 3,
@@ -26,7 +28,8 @@ class MachineApiSearchService
 
   public function search(array $request_data)
   {
-    $plane_type = $this->resolvePlaneType($request_data);
+    $is_flower_shower = $this->isFlowerShowerSearch($request_data);
+    $plane_type = $is_flower_shower ? null : $this->resolvePlaneType($request_data);
     $trip_type = $this->resolveTripType($request_data);
     $adults = max(1, (int) $this->inputValue($request_data, ['adults', 'total_adults', 'total-adults'], 1));
     $sort = $this->resolveSort($request_data);
@@ -47,7 +50,11 @@ class MachineApiSearchService
 
     $departure = $this->resolvePoint($request_data, $airports, 'departure');
     $arrival = $this->resolvePoint($request_data, $airports, 'arrival');
-    $has_quote_input = $this->hasPoint($departure) && $this->hasPoint($arrival);
+    $flower_location = $is_flower_shower ? $this->resolveFlowerShowerPoint($request_data, $airports, $cities) : null;
+    $flower_shower_time = $is_flower_shower ? max(0, (int) $this->inputValue($request_data, ['flower_shower_time', 'flower-shower-time'], 0)) : 0;
+    $has_quote_input = $is_flower_shower
+      ? $this->hasPoint($flower_location)
+      : ($this->hasPoint($departure) && $this->hasPoint($arrival));
 
     $query = DB::table('plane')
       ->select(DB::raw('plane.*, city.name as city_name'))
@@ -57,6 +64,10 @@ class MachineApiSearchService
 
     if($plane_type){
       $query->where('plane.type_id', $plane_type);
+    }
+
+    if($is_flower_shower){
+      $query->where('plane.flower_shower', '=', 1);
     }
 
     if(count($subtype_ids) > 0){
@@ -71,7 +82,9 @@ class MachineApiSearchService
       $quote = null;
 
       if($has_quote_input){
-        if($trip_type === 2){
+        if($is_flower_shower){
+          $quote = $this->flowerShowerQuote($plane, $base, $flower_location, $flower_shower_time, $handling_charges, $tax_details);
+        } else if($trip_type === 2){
           $quote = $this->multiQuote($plane, $base, $request_data, $airports, $cities, $handling_charges, $tax_details);
         } else {
           $quote = $this->singleRoundQuote($plane, $base, $departure, $arrival, $trip_type, $handling_charges, $tax_details, $request_data);
@@ -81,11 +94,28 @@ class MachineApiSearchService
       $data[] = $this->formatMachine($plane, $base, $quote, $plane_types, $plane_subtypes);
     }
 
+    if($is_flower_shower && $has_quote_input){
+      usort($data, function($first, $second) use ($sort) {
+        $first_distance = isset($first['quote']['distance_nm']) ? (float) $first['quote']['distance_nm'] : 0;
+        $second_distance = isset($second['quote']['distance_nm']) ? (float) $second['quote']['distance_nm'] : 0;
+
+        if($first_distance == $second_distance){
+          return 0;
+        }
+
+        if($sort === 'asc'){
+          return $first_distance < $second_distance ? -1 : 1;
+        }
+
+        return $first_distance > $second_distance ? -1 : 1;
+      });
+    }
+
     return [
       'success' => true,
       'meta' => [
         'count' => count($data),
-        'service' => $this->serviceKeyFromType($plane_type),
+        'service' => $this->serviceKeyFromType($plane_type, $is_flower_shower),
         'plane_type' => $plane_type,
         'trip_type' => $this->tripTypeName($trip_type),
         'adults' => $adults,
@@ -111,6 +141,7 @@ class MachineApiSearchService
       'seats' => (int) $plane->seats,
       'speed' => (float) $plane->speed,
       'speed_coefficient' => $this->speedCoefficient($plane),
+      'flower_shower' => isset($plane->flower_shower) ? (int) $plane->flower_shower : 0,
       'lavatory' => (int) $plane->lavatory,
       'price_per_hour' => (float) $plane->price_per_hour,
       'display_image' => $image,
@@ -213,6 +244,151 @@ class MachineApiSearchService
     }
 
     return $this->pricedQuote($plane, $segments, 2, $first_departure, $last_arrival, $base, $handling_charges, $tax_details, $request_data);
+  }
+
+  private function flowerShowerQuote($plane, array $base, array $location, $flower_shower_time, $handling_charges, $tax_details)
+  {
+    $speed = max(1, (float) $plane->speed);
+    $coefficient = $this->speedCoefficient($plane);
+    $distance_nm = round($this->distanceNm($base['latitude'], $base['longitude'], $location['latitude'], $location['longitude']), 2);
+    $one_way_minutes = $this->flowerShowerFlightMinutes($distance_nm, $speed, $coefficient);
+    $raw_minutes = $one_way_minutes * 2;
+    $additional_minutes = ($raw_minutes > 0 && $raw_minutes < 120) ? (120 - $raw_minutes) : 0;
+    $flight_charge_minutes = $raw_minutes + $additional_minutes;
+    $flower_minutes = max(0, (int) $flower_shower_time);
+    $charge_minutes = $flight_charge_minutes + $flower_minutes;
+    $fuel_minutes = $this->fuelHaultMinutes($plane->type_id, $charge_minutes);
+    $total_charge_minutes = $charge_minutes + $fuel_minutes;
+    $handling = $distance_nm > 0 ? $this->flowerShowerGroundHandlingAmount($base['airport_id'], $handling_charges) : 0;
+    $gst_rate = $this->gstRateAmount($tax_details);
+    $flying_cost = ($total_charge_minutes / 60) * (float) $plane->price_per_hour;
+    $sub_total = $flying_cost + $handling;
+    $gst_amount = ($gst_rate / 100) * $sub_total;
+    $grand_total = $sub_total + $gst_amount;
+    $route = $base['name'] . ' > ' . $location['name'] . ' > ' . $base['name'];
+    $total_charge_label = $this->timeLabel($total_charge_minutes);
+    $flight_charge_label = $this->timeLabel($flight_charge_minutes);
+    $flying_cost_amount = round($flying_cost);
+    $handling_amount = round($handling);
+    $gst_amount = round($gst_amount);
+    $sub_total_amount = round($sub_total);
+    $grand_total_amount = round($grand_total);
+
+    $display_rows = [
+      $this->displayRow('base', ['label' => 'Base', 'value' => $base['name']]),
+      $this->displayRow('route', ['label' => 'Route', 'value' => $route]),
+      $this->displayRow('flying_cost', [
+        'label' => 'Flying Cost',
+        'amount' => $flying_cost_amount,
+        'value' => $this->moneyLabel($flying_cost_amount) . ' (For ' . $total_charge_label . '.)',
+      ]),
+      $this->displayRow('flight_time', [
+        'label' => 'Flight Time',
+        'amount' => (int) round($flight_charge_minutes),
+        'value' => $flight_charge_label,
+      ]),
+      $this->displayRow('flower_shower_time', [
+        'label' => 'Flower Shower Time',
+        'amount' => $flower_minutes,
+        'value' => $flower_minutes . ' min.',
+      ]),
+    ];
+
+    if($fuel_minutes > 0){
+      $display_rows[] = $this->displayRow('fuel_hault', [
+        'label' => 'Fuel Hault',
+        'amount' => (int) round($fuel_minutes),
+        'value' => $this->timeLabel($fuel_minutes),
+      ]);
+    }
+
+    $display_rows[] = $this->displayRow('distance', [
+      'label' => 'Distance',
+      'amount' => $distance_nm,
+      'value' => $distance_nm . ' NM',
+    ]);
+    $display_rows[] = $this->displayRow('airport_handling_charges', [
+      'label' => 'Airport Handling Charges',
+      'amount' => $handling_amount,
+      'value' => $this->moneyLabel($handling_amount),
+    ]);
+    $display_rows[] = $this->displayRow('sub_total', [
+      'label' => 'Sub Total',
+      'amount' => $sub_total_amount,
+      'value' => $this->moneyLabel($sub_total_amount),
+    ]);
+    $display_rows[] = $this->displayRow('gst', [
+      'label' => 'GST (' . $this->numberLabel($gst_rate) . '%)',
+      'amount' => $gst_amount,
+      'value' => $this->moneyLabel($gst_amount),
+    ]);
+    $display_rows[] = $this->displayRow('grand_total', [
+      'label' => 'Grand Total',
+      'amount' => $grand_total_amount,
+      'value' => $this->moneyLabel($grand_total_amount),
+    ]);
+
+    return [
+      'route' => $route,
+      'trip_type' => 'flower-shower',
+      'distance_nm' => $distance_nm,
+      'flight_time' => $total_charge_label,
+      'flight_time_minutes' => (int) round($total_charge_minutes),
+      'billable_time' => $total_charge_label,
+      'billable_time_minutes' => (int) round($total_charge_minutes),
+      'flower_shower_time' => $flower_minutes . ' min.',
+      'flower_shower_time_minutes' => $flower_minutes,
+      'fuel_hault' => (int) round($fuel_minutes),
+      'fuel_hault_time' => $this->timeLabel($fuel_minutes),
+      'flying_cost' => $flying_cost_amount,
+      'handling_charges' => $handling_amount,
+      'crew_handling' => 0,
+      'crew_handling_days' => 0,
+      'medical_cost' => 0,
+      'gst_rate' => $gst_rate,
+      'gst_amount' => $gst_amount,
+      'sub_total' => $sub_total_amount,
+      'grand_total' => $grand_total_amount,
+      'cost_estimate' => [
+        'base' => $base['name'],
+        'route' => $route,
+        'flying_cost' => $flying_cost_amount,
+        'flying_cost_text' => $this->moneyLabel($flying_cost_amount) . ' (For ' . $total_charge_label . '.)',
+        'flight_time' => $flight_charge_label,
+        'flower_shower_time' => $flower_minutes . ' min.',
+        'fuel_hault' => (int) round($fuel_minutes),
+        'distance' => $distance_nm,
+        'distance_unit' => 'NM',
+        'airport_handling_charges' => $handling_amount,
+        'sub_total' => $sub_total_amount,
+        'gst_rate' => $gst_rate,
+        'gst_amount' => $gst_amount,
+        'grand_total' => $grand_total_amount,
+      ],
+      'display_rows' => $display_rows,
+      'segments' => [
+        [
+          'from' => $base['name'],
+          'to' => $location['name'],
+          'from_airport_id' => $base['airport_id'],
+          'to_airport_id' => $location['airport_id'],
+          'distance_nm' => $distance_nm,
+          'time_minutes' => (int) round($one_way_minutes),
+          'time' => $this->timeLabel($one_way_minutes),
+          'source' => 'flower_shower',
+        ],
+        [
+          'from' => $location['name'],
+          'to' => $base['name'],
+          'from_airport_id' => $location['airport_id'],
+          'to_airport_id' => $base['airport_id'],
+          'distance_nm' => $distance_nm,
+          'time_minutes' => (int) round($one_way_minutes),
+          'time' => $this->timeLabel($one_way_minutes),
+          'source' => 'flower_shower',
+        ],
+      ],
+    ];
   }
 
   private function pricedQuote($plane, array $segments, $trip_type, array $departure, array $arrival, array $base, $handling_charges, $tax_details, array $request_data)
@@ -495,6 +671,40 @@ class MachineApiSearchService
     return $this->resolvePointFromParts($id, $lat, $lng, $name, $airports, null);
   }
 
+  private function resolveFlowerShowerPoint(array $input, $airports, $cities)
+  {
+    $id = $this->inputValue($input, [
+      'flower_location_airport_id',
+      'flower-location-airport-id',
+      'location_airport_id',
+      'location-airport-id',
+    ]);
+    $lat = $this->inputValue($input, [
+      'flower_location_latitude',
+      'flower-location-latitude',
+      'latitude',
+      'lat',
+      'lat-flower-shower',
+    ]);
+    $lng = $this->inputValue($input, [
+      'flower_location_longitude',
+      'flower-location-longitude',
+      'longitude',
+      'long',
+      'lng',
+      'long-flower-shower',
+    ]);
+    $name = $this->inputValue($input, [
+      'flower_location_name',
+      'flower-location-name',
+      'location',
+      'selected-location',
+      'location-flower-shower',
+    ]);
+
+    return $this->resolvePointFromParts($id, $lat, $lng, $name, $airports, $cities);
+  }
+
   private function resolvePointFromParts($airport_id, $lat, $lng, $name, $airports, $cities)
   {
     $airport = null;
@@ -638,8 +848,12 @@ class MachineApiSearchService
     return isset($this->service_types[$service]) ? $this->service_types[$service] : null;
   }
 
-  private function serviceKeyFromType($type)
+  private function serviceKeyFromType($type, $is_flower_shower = false)
   {
+    if($is_flower_shower){
+      return 'flower-shower';
+    }
+
     if((int) $type === 1){
       return 'private-jet';
     }
@@ -693,6 +907,18 @@ class MachineApiSearchService
     }
 
     return 'desc';
+  }
+
+  private function isFlowerShowerSearch(array $input)
+  {
+    $service = strtolower(trim((string) $this->inputValue($input, ['service', 'service_type', 'service-type'], '')));
+    $service = str_replace(['_', ' '], '-', $service);
+
+    if($service === 'flower-shower'){
+      return true;
+    }
+
+    return (int) $this->inputValue($input, ['flower_shower', 'flower-shower'], 0) === 1;
   }
 
   private function normalizeDate($date)
@@ -800,6 +1026,56 @@ class MachineApiSearchService
     $cruise_minutes = $cruise_distance > 0 ? $cruise_distance / ($speed / 60) : 0;
 
     return $gt1 + $gt2 + $slow_minutes + $cruise_minutes;
+  }
+
+  private function flowerShowerFlightMinutes($distance, $speed, $coefficient)
+  {
+    if($distance <= 0 || $speed <= 0){
+      return 0;
+    }
+
+    if($coefficient <= 0){
+      $coefficient = 1;
+    }
+
+    $reduced_speed_per_minute = ($speed * $coefficient) / 60;
+    $normal_speed_per_minute = $speed / 60;
+
+    if($distance > 200){
+      return (200 / $reduced_speed_per_minute) + (($distance - 200) / $normal_speed_per_minute);
+    }
+
+    return $distance / $reduced_speed_per_minute;
+  }
+
+  private function fuelHaultMinutes($plane_type, $total_minutes)
+  {
+    if((int) $plane_type !== 2){
+      return 0;
+    }
+
+    $remaining_minutes = max(0, (int) round($total_minutes));
+    $fuel_minutes = 0;
+
+    while($remaining_minutes > 90){
+      $fuel_minutes += 30;
+      $remaining_minutes -= 90;
+    }
+
+    return $fuel_minutes;
+  }
+
+  private function flowerShowerGroundHandlingAmount($airport_id, $handling_charges)
+  {
+    if($airport_id && isset($handling_charges[$airport_id]) && is_numeric($handling_charges[$airport_id])){
+      return (float) $handling_charges[$airport_id];
+    }
+
+    if(isset($handling_charges[0]) && is_numeric($handling_charges[0])){
+      return (float) $handling_charges[0];
+    }
+
+    return 0;
   }
 
   private function groundTime(array $point)

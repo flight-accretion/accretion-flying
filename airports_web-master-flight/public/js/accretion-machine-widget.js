@@ -4,7 +4,8 @@
   var SERVICE_LABELS = {
     'air-ambulance': 'Air Ambulance',
     'private-jet': 'Private Jet',
-    'private-charter-helicopter': 'Private Charter Helicopter'
+    'private-charter-helicopter': 'Private Charter Helicopter',
+    'flower-shower': 'Flower Shower'
   };
 
   var SERVICE_ALIASES = {
@@ -18,7 +19,10 @@
     'private charter helicopter': 'private-charter-helicopter',
     'private-charter-helicopter': 'private-charter-helicopter',
     'private helicopter': 'private-charter-helicopter',
-    'helicopter': 'private-charter-helicopter'
+    'helicopter': 'private-charter-helicopter',
+    'flower shower': 'flower-shower',
+    'flower-shower': 'flower-shower',
+    'flower_shower': 'flower-shower'
   };
 
   function normalizeService(value) {
@@ -39,6 +43,10 @@
       window.location.pathname || '',
       document.title || ''
     ].join(' ').toLowerCase();
+
+    if(text.indexOf('flower') !== -1 && text.indexOf('shower') !== -1) {
+      return 'flower-shower';
+    }
 
     if(text.indexOf('private') !== -1 && text.indexOf('helicopter') !== -1) {
       return 'private-charter-helicopter';
@@ -119,7 +127,7 @@
     return parts.join(' - ') || airport.name || ('Airport #' + airport.id);
   }
 
-    function normalizeAirportText(value) {
+  function normalizeAirportText(value) {
     return String(value || '')
       .toLowerCase()
       .normalize('NFKD')
@@ -140,29 +148,82 @@
     ].filter(Boolean).join(' '));
   }
 
-  function airportPickerHtml(name, label, listId) {
+  function isHelicopterWidget(widget) {
+    return widget && widget.service === 'private-charter-helicopter';
+  }
+
+  function isFlowerShowerWidget(widget) {
+    return widget && widget.service === 'flower-shower';
+  }
+
+  function isMapPickerWidget(widget) {
+    return isHelicopterWidget(widget) || isFlowerShowerWidget(widget);
+  }
+
+  function airportPickerHtml(name, label) {
     return '' +
       '<div class="aa-filter-field aa-airport-field">' +
         '<label>' + escapeHtml(label) + '</label>' +
         '<input type="hidden" name="' + escapeHtml(name) + '">' +
-        '<div class="aa-airport-control">' +
-          '<input type="search" class="aa-airport-search" data-airport-input="' + escapeHtml(name) + '" list="' + escapeHtml(listId) + '" placeholder="' + escapeHtml(label) + ' airport / city / IATA">' +
-          '<button type="button" class="aa-map-button" data-aa-map-picker="' + escapeHtml(name) + '">Select from Map</button>' +
-        '</div>' +
-        '<datalist id="' + escapeHtml(listId) + '"></datalist>' +
+        '<input type="hidden" name="' + escapeHtml(name) + '_latitude">' +
+        '<input type="hidden" name="' + escapeHtml(name) + '_longitude">' +
+        '<input type="hidden" name="' + escapeHtml(name) + '_name">' +
+        '<select class="aa-airport-search" data-airport-input="' + escapeHtml(name) + '" data-placeholder="' + escapeHtml(label) + '">' +
+          '<option value="">' + escapeHtml(label) + '</option>' +
+        '</select>' +
       '</div>';
   }
 
-  function fillAirportDatalist(input, airports) {
-    var list = document.getElementById(input.getAttribute('list'));
-    if(!list) return;
+  function fillAirportDatalist(select, airports, widget) {
+    if(!select) return;
 
-    list.innerHTML = '';
-    airports.forEach(function(airport) {
+    var current = select.getAttribute('data-selected-airport-id') || select.value || '';
+    var placeholder = select.getAttribute('data-placeholder') || 'Airport';
+    select.innerHTML = '';
+
+    var blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = placeholder;
+    select.appendChild(blank);
+
+    if(isMapPickerWidget(widget)) {
+      var map = document.createElement('option');
+      map.value = '__map__';
+      map.textContent = 'Select from map';
+      map.setAttribute('data-map-option', '1');
+      select.appendChild(map);
+    }
+
+    (airports || []).forEach(function(airport) {
       var option = document.createElement('option');
-      option.value = airportLabel(airport);
-      list.appendChild(option);
+      option.value = airport.id || '';
+      option.textContent = airportLabel(airport);
+      option.setAttribute('data-airport-label', airportLabel(airport));
+      option.setAttribute('data-latitude', airport.latitude || '');
+      option.setAttribute('data-longitude', airport.longitude || '');
+      select.appendChild(option);
     });
+
+    if(current) {
+      select.value = current;
+    }
+  }
+
+  function ensureAirportOption(select, airport) {
+    if(!select || !airport || !airport.id) return;
+
+    var exists = Array.prototype.some.call(select.options, function(option) {
+      return String(option.value) === String(airport.id);
+    });
+    if(exists) return;
+
+    var option = document.createElement('option');
+    option.value = airport.id;
+    option.textContent = airportLabel(airport);
+    option.setAttribute('data-airport-label', airportLabel(airport));
+    option.setAttribute('data-latitude', airport.latitude || '');
+    option.setAttribute('data-longitude', airport.longitude || '');
+    select.appendChild(option);
   }
 
   function airportById(widget, id) {
@@ -199,56 +260,104 @@
     return exact || contains;
   }
 
-  function setAirportPickerValue(widget, name, airport) {
-    var hidden = widget.form.querySelector('[name="' + name + '"]');
-    var input = widget.form.querySelector('[data-airport-input="' + name + '"]');
+  function airportFieldElement(input, name) {
+    var group = input && input.closest ? input.closest('.aa-airport-field') : null;
+    return group ? group.querySelector('[name="' + name + '"]') : null;
+  }
 
-    if(!hidden || !input || !airport) return;
+  function setAirportPickerValue(widget, name, airport, selectedLat, selectedLng, targetInput) {
+    if(!widget || !widget.form || !airport) return;
 
-    hidden.value = airport.id || '';
-    input.value = airportLabel(airport);
-    input.setAttribute('data-selected-airport-id', airport.id || '');
+    var select = targetInput || widget.form.querySelector('[data-airport-input="' + name + '"]');
+    var hidden = select ? airportFieldElement(select, name) : widget.form.querySelector('[name="' + name + '"]');
+    var latInput = select ? airportFieldElement(select, name + '_latitude') : widget.form.querySelector('[name="' + name + '_latitude"]');
+    var lngInput = select ? airportFieldElement(select, name + '_longitude') : widget.form.querySelector('[name="' + name + '_longitude"]');
+    var nameInput = select ? airportFieldElement(select, name + '_name') : widget.form.querySelector('[name="' + name + '_name"]');
+
+    ensureAirportOption(select, airport);
+
+    if(hidden) hidden.value = airport.id || '';
+    if(latInput) latInput.value = selectedLat || airport.latitude || '';
+    if(lngInput) lngInput.value = selectedLng || airport.longitude || '';
+    if(nameInput) nameInput.value = airportLabel(airport);
+
+    if(select) {
+      select.setAttribute('data-selected-airport-id', airport.id || '');
+      select.value = airport.id || '';
+    }
   }
 
   function syncAirportInput(widget, input) {
-    var name = input.getAttribute('data-airport-input');
-    var hidden = widget.form.querySelector('[name="' + name + '"]');
-    if(!hidden) return;
+    if(!widget || !input) return null;
 
-    var airport = matchAirport(widget, input.value);
-    hidden.value = airport ? airport.id : '';
-    input.setAttribute('data-selected-airport-id', airport ? airport.id : '');
+    var name = input.getAttribute('data-airport-input');
+    var hidden = airportFieldElement(input, name);
+    var latInput = airportFieldElement(input, name + '_latitude');
+    var lngInput = airportFieldElement(input, name + '_longitude');
+    var nameInput = airportFieldElement(input, name + '_name');
+
+    if(input.value === '__map__') {
+      return null;
+    }
+
+    var option = input.options[input.selectedIndex];
+    if(hidden) hidden.value = input.value || '';
+    if(latInput) latInput.value = option ? option.getAttribute('data-latitude') || '' : '';
+    if(lngInput) lngInput.value = option ? option.getAttribute('data-longitude') || '' : '';
+    if(nameInput) nameInput.value = option ? option.getAttribute('data-airport-label') || option.textContent || '' : '';
+
+    input.setAttribute('data-selected-airport-id', input.value || '');
+    return airportById(widget, input.value);
   }
 
-  function syncAirportInputs(widget) {
-    widget.form.querySelectorAll('[data-airport-input]').forEach(function(input) {
+  function syncAirportInputs(widget, scope) {
+    (scope || widget.form).querySelectorAll('[data-airport-input]').forEach(function(input) {
       syncAirportInput(widget, input);
     });
   }
 
-  function syncAirportDisplays(widget) {
-    widget.form.querySelectorAll('[data-airport-input]').forEach(function(input) {
+  function syncAirportDisplays(widget, scope) {
+    if(!widget) return;
+
+    (scope || widget.form).querySelectorAll('[data-airport-input]').forEach(function(input) {
       var name = input.getAttribute('data-airport-input');
-      var hidden = widget.form.querySelector('[name="' + name + '"]');
-      var airport = hidden ? airportById(widget, hidden.value) : null;
-      if(airport) input.value = airportLabel(airport);
+      var hidden = airportFieldElement(input, name);
+      var selectedId = hidden ? hidden.value : '';
+      var airport = selectedId ? airportById(widget, selectedId) : null;
+
+      if(airport) {
+        ensureAirportOption(input, airport);
+        input.value = airport.id || '';
+        input.setAttribute('data-selected-airport-id', airport.id || '');
+      } else {
+        input.value = '';
+        input.setAttribute('data-selected-airport-id', '');
+      }
+
+      syncAirportInput(widget, input);
     });
   }
 
   function bindAirportPickers(widget, scope) {
     scope.querySelectorAll('[data-airport-input]').forEach(function(input) {
-      if(input.getAttribute('data-aa-bound') === '1') return;
-      input.setAttribute('data-aa-bound', '1');
-      fillAirportDatalist(input, widget.airports);
-      input.addEventListener('change', function() { syncAirportInput(widget, input); });
-      input.addEventListener('blur', function() { syncAirportInput(widget, input); });
-    });
+      if(input.getAttribute('data-aa-bound') === '1') {
+        fillAirportDatalist(input, widget.airports, widget);
+        return;
+      }
 
-    scope.querySelectorAll('[data-aa-map-picker]').forEach(function(button) {
-      if(button.getAttribute('data-aa-bound') === '1') return;
-      button.setAttribute('data-aa-bound', '1');
-      button.addEventListener('click', function() {
-        openAirportMap(widget, button.getAttribute('data-aa-map-picker'));
+      input.setAttribute('data-aa-bound', '1');
+      fillAirportDatalist(input, widget.airports, widget);
+
+      input.addEventListener('change', function() {
+        if(input.value === '__map__') {
+          input.value = input.getAttribute('data-selected-airport-id') || '';
+          if(isMapPickerWidget(widget)) {
+            openAirportMap(widget, input.getAttribute('data-airport-input'), input);
+          }
+          return;
+        }
+
+        syncAirportInput(widget, input);
       });
     });
   }
@@ -360,7 +469,12 @@
       'multi_departure',
       'multi_arrival',
       'multi_adults',
-      'multi_date'
+      'multi_date',
+      'flower_location_airport_id',
+      'flower_location_latitude',
+      'flower_location_longitude',
+      'flower_location_name',
+      'flower_shower_time'
     ].forEach(function(key) {
       params.delete(key);
     });
@@ -381,15 +495,28 @@
   function buildSearchUrl(widget) {
     var form = widget.form;
     syncAirportInputs(widget);
-    var tripType = form.querySelector('[name="trip_type"]').value || 'single';
+    var tripTypeField = form.querySelector('[name="trip_type"]');
+    var tripType = tripTypeField ? tripTypeField.value || 'single' : 'single';
+    var sortField = form.querySelector('[name="sort"]');
     var url = new URL(window.location.href);
     var params = url.searchParams;
 
     clearMachineQueryParams(params);
     params.set('aa_search', '1');
     params.set('service', widget.service);
+    params.set('sort', sortField ? sortField.value || 'price_asc' : 'price_asc');
+
+    if(isFlowerShowerWidget(widget)) {
+      params.set('flower_location_airport_id', form.querySelector('[name="flower_location_airport_id"]').value);
+      params.set('flower_location_latitude', form.querySelector('[name="flower_location_airport_id_latitude"]').value);
+      params.set('flower_location_longitude', form.querySelector('[name="flower_location_airport_id_longitude"]').value);
+      params.set('flower_location_name', form.querySelector('[name="flower_location_airport_id_name"]').value);
+      params.set('flower_shower_time', form.querySelector('[name="flower_shower_time"]').value || '15');
+      params.set('date', form.querySelector('[name="date"]').value);
+      return url.toString();
+    }
+
     params.set('trip_type', tripType);
-    params.set('sort', form.querySelector('[name="sort"]').value || 'price_asc');
 
     if(tripType === 'multi') {
       form.querySelectorAll('.aa-multi-leg').forEach(function(row) {
@@ -427,6 +554,18 @@
     var form = widget.form;
     var tripType = params.get('trip_type') || 'single';
 
+    if(isFlowerShowerWidget(widget)) {
+      form.querySelector('[name="sort"]').value = params.get('sort') || 'price_asc';
+      form.querySelector('[name="flower_location_airport_id"]').value = params.get('flower_location_airport_id') || '';
+      form.querySelector('[name="flower_location_airport_id_latitude"]').value = params.get('flower_location_latitude') || '';
+      form.querySelector('[name="flower_location_airport_id_longitude"]').value = params.get('flower_location_longitude') || '';
+      form.querySelector('[name="flower_location_airport_id_name"]').value = params.get('flower_location_name') || '';
+      form.querySelector('[name="flower_shower_time"]').value = params.get('flower_shower_time') || '15';
+      form.querySelector('[name="date"]').value = params.get('date') || defaultDateTimeValue();
+      syncAirportDisplays(widget);
+      return true;
+    }
+
     form.querySelector('[name="trip_type"]').value = tripType;
     form.classList.toggle('is-multi', tripType === 'multi');
     form.querySelector('[name="sort"]').value = params.get('sort') || 'price_asc';
@@ -456,7 +595,7 @@
       form.querySelector('[name="adults"]').value = params.get('adults') || 1;
       form.querySelector('[name="date"]').value = params.get('date') || defaultDateTimeValue();
     }
-   syncAirportDisplays(widget);
+    syncAirportDisplays(widget);
     return true;
   }
 
@@ -468,12 +607,13 @@
     return url;
   }
 
-  function openAirportMap(widget, fieldName) {
+  function openAirportMap(widget, fieldName, targetInput) {
     if(typeof L === 'undefined') {
       alert('Map library is not loaded.');
       return;
     }
 
+    widget.airportMapTargetInput = targetInput || null;
     var modal = getAirportMapModal(widget);
     modal.classList.add('is-open');
     modal.setAttribute('data-target-field', fieldName);
@@ -557,7 +697,8 @@
           widget.airports.push(airport);
         }
         widget.airportById[String(airport.id)] = airport;
-        setAirportPickerValue(widget, fieldName, airport);
+        setAirportPickerValue(widget, fieldName, airport, lat, lng, widget.airportMapTargetInput);
+        widget.airportMapTargetInput = null;
         modal.classList.remove('is-open');
       }).catch(function(error) {
         modal.querySelector('.aa-map-status').textContent = error.message || 'Unable to find nearest airport.';
@@ -572,7 +713,32 @@
   function createFilter(widget) {
     var form = document.createElement('form');
     form.className = 'aa-machine-filter';
-    form.innerHTML =
+
+    if(isFlowerShowerWidget(widget)) {
+      form.classList.add('is-flower-shower');
+      form.innerHTML =
+        airportPickerHtml('flower_location_airport_id', 'Location') +
+        '<div class="aa-filter-field">' +
+          '<label>Flower Shower Time</label>' +
+          '<input type="number" name="flower_shower_time" min="1" step="1" value="15">' +
+        '</div>' +
+        '<div class="aa-filter-field">' +
+          '<label>Date & Time</label>' +
+          '<input type="datetime-local" name="date" value="' + defaultDateTimeValue() + '">' +
+        '</div>' +
+        '<div class="aa-filter-field">' +
+          '<label>Distance</label>' +
+          '<select name="sort">' +
+            '<option value="price_asc">Ascending</option>' +
+            '<option value="price_desc">Descending</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="aa-filter-actions">' +
+          '<button class="aa-button" type="submit">Search</button>' +
+          '<button class="aa-button aa-button-secondary aa-reset" type="button">Reset</button>' +
+        '</div>';
+    } else {
+      form.innerHTML =
       '<div class="aa-filter-field">' +
         '<label>Trip Type</label>' +
         '<select name="trip_type">' +
@@ -581,8 +747,8 @@
           '<option value="multi">Multi Trip</option>' +
         '</select>' +
       '</div>' +
-      airportPickerHtml('departure_airport_id', 'Departure', 'aa-airports-departure') +
-      airportPickerHtml('arrival_airport_id', 'Arrival', 'aa-airports-arrival') +
+      airportPickerHtml('departure_airport_id', 'Departure') +
+      airportPickerHtml('arrival_airport_id', 'Arrival') +
       '<div class="aa-filter-field aa-single-fields">' +
         '<label>Passengers</label>' +
         '<input type="number" name="adults" min="1" value="1">' +
@@ -602,25 +768,30 @@
       '<div class="aa-filter-actions">' +
         '<button class="aa-button" type="submit">Search</button>' +
         '<button class="aa-button aa-button-secondary aa-reset" type="button">Reset</button>' +
-      '</div>';
+        '</div>';
+    }
 
     widget.root.appendChild(form);
     widget.form = form;
     widget.multiContainer = form.querySelector('.aa-multi-legs');
     bindAirportPickers(widget, form);
 
-    addMultiLeg(widget);
+    if(!isFlowerShowerWidget(widget)) {
+      addMultiLeg(widget);
 
-    form.querySelector('[name="trip_type"]').addEventListener('change', function() {
-      var isMulti = this.value === 'multi';
-      form.classList.toggle('is-multi', isMulti);
-    });
+      form.querySelector('[name="trip_type"]').addEventListener('change', function() {
+        var isMulti = this.value === 'multi';
+        form.classList.toggle('is-multi', isMulti);
+      });
+    }
 
     form.querySelector('.aa-reset').addEventListener('click', function() {
       form.reset();
-      form.classList.remove('is-multi');
-      widget.multiContainer.innerHTML = '';
-      addMultiLeg(widget);
+      if(!isFlowerShowerWidget(widget)) {
+        form.classList.remove('is-multi');
+        widget.multiContainer.innerHTML = '';
+        addMultiLeg(widget);
+      }
       widget.hasSearched = false;
       clearValidation(form);
       widget.root.dispatchEvent(new CustomEvent('aa:machineFilterReset', { bubbles: true }));
@@ -716,9 +887,40 @@
   function validateFilter(widget) {
     var form = widget.form;
     var state = { valid: true, firstField: null };
-    var tripType = form.querySelector('[name="trip_type"]').value || 'single';
+    var tripTypeField = form.querySelector('[name="trip_type"]');
+    var tripType = tripTypeField ? tripTypeField.value || 'single' : 'single';
 
     clearValidation(form);
+
+    if(isFlowerShowerWidget(widget)) {
+      var location = form.querySelector('[name="flower_location_airport_id"]');
+      var latitude = form.querySelector('[name="flower_location_airport_id_latitude"]');
+      var longitude = form.querySelector('[name="flower_location_airport_id_longitude"]');
+      var showerTime = form.querySelector('[name="flower_shower_time"]');
+      var date = form.querySelector('[name="date"]');
+
+      if(!fieldValue(location) && (!fieldValue(latitude) || !fieldValue(longitude))) {
+        addValidationError(form.querySelector('[data-airport-input="flower_location_airport_id"]') || location, 'Please select flower shower location.', state);
+      }
+
+      if(!fieldValue(showerTime) || Number(fieldValue(showerTime)) < 1) {
+        addValidationError(showerTime, 'Please enter flower shower time in minutes.', state);
+      }
+
+      if(!fieldValue(date)) {
+        addValidationError(date, 'Please select departure date.', state);
+      }
+
+      if(!state.valid && state.firstField) {
+        state.firstField.focus({ preventScroll: true });
+        var flowerTarget = state.firstField.closest('.aa-filter-field') || state.firstField;
+        if(flowerTarget && flowerTarget.scrollIntoView) {
+          flowerTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+
+      return state.valid;
+    }
 
     if(tripType === 'multi') {
       var rows = form.querySelectorAll('.aa-multi-leg');
@@ -784,13 +986,11 @@
   }
   function addMultiLeg(widget) {
     widget.multiLegIndex = (widget.multiLegIndex || 0) + 1;
-var depListId = 'aa-airports-multi-departure-' + widget.multiLegIndex;
-var arrListId = 'aa-airports-multi-arrival-' + widget.multiLegIndex;
     var row = document.createElement('div');
     row.className = 'aa-multi-leg';
     row.innerHTML =
-    airportPickerHtml('multi_departure[]', 'Departure', depListId) +
-    airportPickerHtml('multi_arrival[]', 'Arrival', arrListId) +
+    airportPickerHtml('multi_departure[]', 'Departure') +
+    airportPickerHtml('multi_arrival[]', 'Arrival') +
       '<div class="aa-filter-field">' +
         '<label>Passengers</label>' +
         '<input type="number" name="multi_adults[]" min="1" value="1">' +
@@ -834,11 +1034,11 @@ var arrListId = 'aa-airports-multi-arrival-' + widget.multiLegIndex;
     var params = new URLSearchParams();
     var form = widget.form;
     syncAirportInputs(widget);
-    var tripType = form.querySelector('[name="trip_type"]').value || 'single';
+    var tripTypeField = form.querySelector('[name="trip_type"]');
+    var tripType = tripTypeField ? tripTypeField.value || 'single' : 'single';
     var sort = form.querySelector('[name="sort"]').value || 'price_asc';
 
     params.set('service', widget.service);
-    params.set('trip_type', tripType);
     params.set('sort', sort);
 
     if(widget.apiKey) {
@@ -848,6 +1048,20 @@ var arrListId = 'aa-airports-multi-arrival-' + widget.multiLegIndex;
     if(!fromFilter) {
       return params;
     }
+
+    if(isFlowerShowerWidget(widget)) {
+      params.set('trip_type', 'flower-shower');
+      params.set('flower_location_airport_id', form.querySelector('[name="flower_location_airport_id"]').value);
+      params.set('flower_location_latitude', form.querySelector('[name="flower_location_airport_id_latitude"]').value);
+      params.set('flower_location_longitude', form.querySelector('[name="flower_location_airport_id_longitude"]').value);
+      params.set('flower_location_name', form.querySelector('[name="flower_location_airport_id_name"]').value);
+      params.set('flower_shower_time', form.querySelector('[name="flower_shower_time"]').value || '15');
+      params.set('date', apiDate(form.querySelector('[name="date"]').value));
+      params.set('adults', '1');
+      return params;
+    }
+
+    params.set('trip_type', tripType);
 
     if(tripType === 'multi') {
       form.querySelectorAll('.aa-multi-leg').forEach(function(row) {
@@ -894,7 +1108,7 @@ var arrListId = 'aa-airports-multi-arrival-' + widget.multiLegIndex;
     });
 
     widget.form.querySelectorAll('[data-airport-input]').forEach(function(input) {
-      fillAirportDatalist(input, widget.airports);
+      fillAirportDatalist(input, widget.airports, widget);
     });
 
     syncAirportDisplays(widget);
@@ -1105,6 +1319,9 @@ if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
     if(quote.route) {
       lines.push('Route: ' + quote.route);
       lines.push('Flight Time: ' + quote.flight_time);
+      if(quote.flower_shower_time) {
+        lines.push('Flower Shower Time: ' + quote.flower_shower_time);
+      }
       lines.push('Grand Total: ' + money(quote.grand_total));
     }
 
@@ -1199,6 +1416,7 @@ if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
       airportMap: null,
       airportMarker: null,
       airportMapModal: null,
+      airportMapTargetInput: null,
       machineMap: {},
       hasSearched: false,
       searchUrlMode: root.getAttribute('data-search-url-mode') === '1'
