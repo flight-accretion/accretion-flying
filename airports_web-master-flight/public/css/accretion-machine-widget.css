@@ -124,10 +124,10 @@
 
 .aa-result-filter {
   display: none;
-  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  grid-template-columns: minmax(220px, 260px);
   gap: 14px;
   align-items: end;
-  width: min(460px, 100%);
+  width: min(260px, 100%);
   margin: 0 0 28px auto;
 }
 
