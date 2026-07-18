@@ -452,6 +452,161 @@
     }
   }
 
+  function machineTypeValue(machine) {
+    return String(machine && machine.type_id ? machine.type_id : '').trim();
+  }
+
+  function machineSubtypeValue(machine) {
+    var subtypeId = machine && machine.subtype_id ? machine.subtype_id : '';
+    if(subtypeId && String(subtypeId) !== '0') {
+      return String(subtypeId).trim();
+    }
+
+    return String(machine && machine.subtype ? machine.subtype : '').trim().toLowerCase();
+  }
+
+  function optionListFromMachines(machines, valueGetter, labelGetter) {
+    var map = {};
+
+    (machines || []).forEach(function(machine) {
+      var value = valueGetter(machine);
+      var label = labelGetter(machine);
+
+      if(!value || !label || map[value]) {
+        return;
+      }
+
+      map[value] = label;
+    });
+
+    return Object.keys(map).map(function(value) {
+      return {
+        value: value,
+        label: map[value]
+      };
+    }).sort(function(first, second) {
+      return first.label.localeCompare(second.label);
+    });
+  }
+
+  function setSelectOptions(select, placeholder, options, selectedValue) {
+    if(!select) {
+      return;
+    }
+
+    select.innerHTML = '';
+
+    var blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = placeholder;
+    select.appendChild(blank);
+
+    (options || []).forEach(function(item) {
+      var option = document.createElement('option');
+      option.value = item.value;
+      option.textContent = item.label;
+      select.appendChild(option);
+    });
+
+    if(selectedValue && Array.prototype.some.call(select.options, function(option) {
+      return option.value === selectedValue;
+    })) {
+      select.value = selectedValue;
+    }
+
+    select.disabled = !options || !options.length;
+  }
+
+  function createResultFilters(widget) {
+    var filters = document.createElement('div');
+    filters.className = 'aa-result-filter';
+    filters.innerHTML =
+      '<div class="aa-filter-field">' +
+        '<label>Machine Type</label>' +
+        '<select name="machine_type_filter"></select>' +
+      '</div>' +
+      '<div class="aa-filter-field">' +
+        '<label>Plane Subtype</label>' +
+        '<select name="machine_subtype_filter"></select>' +
+      '</div>';
+
+    widget.machineTypeFilter = filters.querySelector('[name="machine_type_filter"]');
+    widget.machineSubtypeFilter = filters.querySelector('[name="machine_subtype_filter"]');
+
+    filters.addEventListener('change', function(event) {
+      if(event.target === widget.machineTypeFilter) {
+        populateResultFilters(widget, widget.loadedMachines || [], true);
+      }
+
+      applyResultFilters(widget);
+    });
+
+    widget.resultFilter = filters;
+    populateResultFilters(widget, [], false);
+    return filters;
+  }
+
+  function populateResultFilters(widget, machines, preserveSelection) {
+    var selectedType = preserveSelection && widget.machineTypeFilter ? widget.machineTypeFilter.value : '';
+    var selectedSubtype = preserveSelection && widget.machineSubtypeFilter ? widget.machineSubtypeFilter.value : '';
+    var typeOptions = optionListFromMachines(machines, machineTypeValue, function(machine) {
+      return machine.type || SERVICE_LABELS[widget.service] || 'Machine';
+    });
+
+    setSelectOptions(widget.machineTypeFilter, 'All Machine Types', typeOptions, selectedType);
+
+    if(widget.machineTypeFilter && widget.machineTypeFilter.value !== selectedType) {
+      selectedType = '';
+    }
+
+    var subtypeSource = selectedType ? (machines || []).filter(function(machine) {
+      return machineTypeValue(machine) === selectedType;
+    }) : machines;
+
+    var subtypeOptions = optionListFromMachines(subtypeSource, machineSubtypeValue, function(machine) {
+      return machine.subtype || '';
+    });
+
+    setSelectOptions(widget.machineSubtypeFilter, 'All Plane Subtypes', subtypeOptions, selectedSubtype);
+  }
+
+  function resetResultFilters(widget) {
+    widget.loadedMachines = [];
+    if(widget.resultFilter) {
+      widget.resultFilter.classList.remove('is-active');
+    }
+    populateResultFilters(widget, [], false);
+  }
+
+  function filteredMachines(widget) {
+    var typeValue = widget.machineTypeFilter ? widget.machineTypeFilter.value : '';
+    var subtypeValue = widget.machineSubtypeFilter ? widget.machineSubtypeFilter.value : '';
+
+    return (widget.loadedMachines || []).filter(function(machine) {
+      if(typeValue && machineTypeValue(machine) !== typeValue) {
+        return false;
+      }
+
+      if(subtypeValue && machineSubtypeValue(machine) !== subtypeValue) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  function applyResultFilters(widget) {
+    var machines = filteredMachines(widget);
+    var hasMachines = (widget.loadedMachines || []).length > 0;
+    var shouldShowFilters = hasMachines && (!widget.searchUrlMode || widget.hasSearched);
+
+    if(widget.resultFilter) {
+      widget.resultFilter.classList.toggle('is-active', shouldShowFilters);
+    }
+
+    renderMachines(widget, machines, widget.lastMachineMeta || {}, 'No machines match the selected filters.');
+  }
+
   function clearMachineQueryParams(params) {
     [
       'aa_search',
@@ -839,6 +994,7 @@
         addMultiLeg(widget);
       }
       widget.hasSearched = false;
+      resetResultFilters(widget);
       clearValidation(form);
       widget.root.dispatchEvent(new CustomEvent('aa:machineFilterReset', { bubbles: true }));
       if(widget.searchUrlMode && isSearchUrl()) {
@@ -1167,19 +1323,25 @@
 
     setLoading(widget);
     widget.list.innerHTML = '';
+    if(widget.resultFilter) {
+      widget.resultFilter.classList.remove('is-active');
+    }
 
     return fetchJson(url).then(function(response) {
       var machines = response.data || [];
-      renderMachines(widget, machines, response.meta || {});
+      widget.loadedMachines = machines;
+      widget.lastMachineMeta = response.meta || {};
+      populateResultFilters(widget, machines, false);
+      applyResultFilters(widget);
       setStatus(widget, '', false);
     }).catch(function(error) {
       setStatus(widget, error.message || 'Unable to load machines.', true);
     });
   }
 
-  function renderMachines(widget, machines, meta) {
+  function renderMachines(widget, machines, meta, emptyMessage) {
     if(!machines.length) {
-      widget.list.innerHTML = '<div class="aa-machine-card"><div>No machines found for this service.</div></div>';
+      widget.list.innerHTML = '<div class="aa-machine-card"><div>' + escapeHtml(emptyMessage || 'No machines found for this service.') + '</div></div>';
       return;
     }
 
@@ -1464,6 +1626,11 @@ if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
       airportMapModal: null,
       airportMapTargetInput: null,
       machineMap: {},
+      loadedMachines: [],
+      lastMachineMeta: {},
+      resultFilter: null,
+      machineTypeFilter: null,
+      machineSubtypeFilter: null,
       hasSearched: false,
       searchUrlMode: root.getAttribute('data-search-url-mode') === '1'
     };
@@ -1476,6 +1643,8 @@ if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
     widget.status = document.createElement('div');
     widget.status.className = 'aa-machine-status';
     widget.root.appendChild(widget.status);
+
+    widget.root.appendChild(createResultFilters(widget));
 
     widget.list = document.createElement('div');
     widget.list.className = 'aa-machine-list';

@@ -122,6 +122,25 @@
   gap: 10px;
 }
 
+.aa-result-filter {
+  display: none;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+  width: min(460px, 100%);
+  margin: 0 0 28px auto;
+}
+
+.aa-result-filter.is-active {
+  display: grid;
+}
+
+.aa-result-filter select:disabled {
+  color: #7b8491;
+  background: #f6f7f9;
+  cursor: not-allowed;
+}
+
 .aa-button {
   min-height: 42px;
   padding: 10px 18px;
@@ -411,6 +430,7 @@
     }
 
   .aa-machine-filter,
+  .aa-result-filter,
   .aa-machine-grid,
   .aa-booking-form,
   .aa-multi-leg {
