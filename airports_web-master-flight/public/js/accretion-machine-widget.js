@@ -518,7 +518,7 @@
     filters.className = 'aa-result-filter';
     filters.innerHTML =
       '<div class="aa-filter-field">' +
-        '<label>Plane Subtype</label>' +
+        '<label>Subtype</label>' +
         '<select name="machine_subtype_filter"></select>' +
       '</div>';
 
@@ -541,7 +541,7 @@
       return machine.subtype || '';
     });
 
-    setSelectOptions(widget.machineSubtypeFilter, 'All Plane Subtypes', subtypeOptions, selectedSubtype);
+    setSelectOptions(widget.machineSubtypeFilter, 'Subtypes', subtypeOptions, selectedSubtype);
   }
 
   function resetResultFilters(widget) {
@@ -731,8 +731,8 @@
     return url;
   }
 
-  function geocodeLocationUrl(query) {
-    return 'https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=' + encodeURIComponent(query);
+  function geocodeLocationUrl(query, limit) {
+    return 'https://nominatim.openstreetmap.org/search?format=json&limit=' + encodeURIComponent(limit || 1) + '&addressdetails=1&q=' + encodeURIComponent(query);
   }
 
   function setAirportMapSelection(widget, modal, lat, lng, label) {
@@ -751,6 +751,91 @@
     }
   }
 
+  function mapPlaceLabel(place) {
+    return place && place.display_name ? place.display_name : '';
+  }
+
+  function hideMapSuggestions(modal) {
+    var suggestions = modal ? modal.querySelector('.aa-map-suggestions') : null;
+    var input = modal ? modal.querySelector('.aa-map-search-input') : null;
+
+    if(suggestions) {
+      suggestions.innerHTML = '';
+      suggestions.classList.remove('is-active');
+    }
+
+    if(input) {
+      input.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function selectMapSuggestion(widget, modal, place, fallbackLabel) {
+    if(!place || !isFinite(Number(place.lat)) || !isFinite(Number(place.lon))) {
+      return false;
+    }
+
+    var input = modal.querySelector('.aa-map-search-input');
+    var lat = Number(place.lat);
+    var lng = Number(place.lon);
+    var label = mapPlaceLabel(place) || fallbackLabel || '';
+
+    if(input) {
+      input.value = label;
+    }
+
+    setAirportMapSelection(widget, modal, lat, lng, label);
+    hideMapSuggestions(modal);
+
+    if(widget.airportMap) {
+      widget.airportMap.setView([lat, lng], 12);
+    }
+
+    return true;
+  }
+
+  function renderMapSuggestions(widget, modal, places, query) {
+    var suggestions = modal.querySelector('.aa-map-suggestions');
+    var input = modal.querySelector('.aa-map-search-input');
+
+    if(!suggestions || !Array.isArray(places) || !places.length) {
+      hideMapSuggestions(modal);
+      return;
+    }
+
+    widget.mapSearchResults = places;
+    suggestions.innerHTML = places.slice(0, 5).map(function(place, index) {
+      var label = mapPlaceLabel(place) || query;
+      return '<button class="aa-map-suggestion" type="button" role="option" data-place-index="' + index + '">' + escapeHtml(label) + '</button>';
+    }).join('');
+    suggestions.classList.add('is-active');
+
+    if(input) {
+      input.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  function queueMapSuggestions(widget, modal, query) {
+    clearTimeout(widget.mapSearchTimer);
+
+    if(!query || query.length < 3) {
+      hideMapSuggestions(modal);
+      return;
+    }
+
+    modal.setAttribute('data-map-search-query', query);
+    widget.mapSearchTimer = setTimeout(function() {
+      fetchJson(geocodeLocationUrl(query, 5)).then(function(results) {
+        if(modal.getAttribute('data-map-search-query') !== query) {
+          return;
+        }
+
+        renderMapSuggestions(widget, modal, results, query);
+      }).catch(function() {
+        hideMapSuggestions(modal);
+      });
+    }, 250);
+  }
+
   function openAirportMap(widget, fieldName, targetInput) {
     if(typeof L === 'undefined') {
       alert('Map library is not loaded.');
@@ -762,6 +847,7 @@
     modal.classList.add('is-open');
     modal.setAttribute('data-target-field', fieldName);
     modal.querySelector('.aa-map-status').textContent = 'Click on the map, then press Select Airport.';
+    hideMapSuggestions(modal);
 
     setTimeout(function() {
       if(!widget.airportMap) {
@@ -773,6 +859,7 @@
         widget.airportMap.on('click', function(event) {
           var lat = event.latlng.lat;
           var lng = event.latlng.lng;
+          hideMapSuggestions(modal);
           setAirportMapSelection(widget, modal, lat, lng, '');
         });
       }
@@ -794,7 +881,10 @@
         '</div>' +
         '<div class="aa-airport-modal-body">' +
           '<form class="aa-map-search" role="search">' +
-            '<input class="aa-map-search-input" type="search" placeholder="Search location" autocomplete="off">' +
+            '<div class="aa-map-search-field">' +
+              '<input class="aa-map-search-input" type="search" placeholder="Search location" autocomplete="off" aria-autocomplete="list" aria-expanded="false">' +
+              '<div class="aa-map-suggestions" role="listbox"></div>' +
+            '</div>' +
             '<button class="aa-button aa-map-search-button" type="submit">Search</button>' +
           '</form>' +
           '<div class="aa-map-status">Click on the map, then press Select Airport.</div>' +
@@ -807,13 +897,45 @@
       '</div>';
 
     modal.querySelector('.aa-close').addEventListener('click', function() {
+      hideMapSuggestions(modal);
       modal.classList.remove('is-open');
     });
     modal.querySelector('.aa-map-cancel').addEventListener('click', function() {
+      hideMapSuggestions(modal);
       modal.classList.remove('is-open');
     });
     modal.addEventListener('click', function(event) {
-      if(event.target === modal) modal.classList.remove('is-open');
+      if(event.target === modal) {
+        hideMapSuggestions(modal);
+        modal.classList.remove('is-open');
+      }
+    });
+    modal.querySelector('.aa-map-search-input').addEventListener('input', function() {
+      queueMapSuggestions(widget, modal, this.value.trim());
+    });
+    modal.querySelector('.aa-map-search-input').addEventListener('keydown', function(event) {
+      if(event.key === 'Escape') {
+        hideMapSuggestions(modal);
+      }
+    });
+    modal.querySelector('.aa-map-search-input').addEventListener('blur', function() {
+      setTimeout(function() {
+        hideMapSuggestions(modal);
+      }, 180);
+    });
+    modal.querySelector('.aa-map-suggestions').addEventListener('mousedown', function(event) {
+      event.preventDefault();
+    });
+    modal.querySelector('.aa-map-suggestions').addEventListener('click', function(event) {
+      var button = event.target && event.target.closest ? event.target.closest('[data-place-index]') : null;
+
+      if(!button) {
+        return;
+      }
+
+      var index = Number(button.getAttribute('data-place-index'));
+      var place = widget.mapSearchResults && widget.mapSearchResults[index] ? widget.mapSearchResults[index] : null;
+      selectMapSuggestion(widget, modal, place, modal.querySelector('.aa-map-search-input').value.trim());
     });
     modal.querySelector('.aa-map-search').addEventListener('submit', function(event) {
       event.preventDefault();
@@ -825,21 +947,14 @@
         return;
       }
 
+      hideMapSuggestions(modal);
       modal.querySelector('.aa-map-status').textContent = 'Searching location...';
-      fetchJson(geocodeLocationUrl(query)).then(function(results) {
+      fetchJson(geocodeLocationUrl(query, 1)).then(function(results) {
         var place = Array.isArray(results) && results.length ? results[0] : null;
 
-        if(!place || !isFinite(Number(place.lat)) || !isFinite(Number(place.lon))) {
+        if(!selectMapSuggestion(widget, modal, place, query)) {
           modal.querySelector('.aa-map-status').textContent = 'No location found. Try a nearby city, area, or landmark.';
           return;
-        }
-
-        var lat = Number(place.lat);
-        var lng = Number(place.lon);
-        setAirportMapSelection(widget, modal, lat, lng, place.display_name || query);
-
-        if(widget.airportMap) {
-          widget.airportMap.setView([lat, lng], 12);
         }
       }).catch(function(error) {
         modal.querySelector('.aa-map-status').textContent = error.message || 'Unable to search location.';
@@ -1594,6 +1709,8 @@ if(Array.isArray(quote.display_rows) && quote.display_rows.length) {
       airportMarker: null,
       airportMapModal: null,
       airportMapTargetInput: null,
+      mapSearchTimer: null,
+      mapSearchResults: [],
       machineMap: {},
       loadedMachines: [],
       lastMachineMeta: {},

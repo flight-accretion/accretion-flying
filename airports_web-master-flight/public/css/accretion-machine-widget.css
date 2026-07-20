@@ -53,6 +53,14 @@
   cursor: pointer;
 }
 
+.aa-airport-native {
+  display: none;
+}
+
+.aa-airport-search-input {
+  cursor: text;
+}
+
 .aa-filter-field.aa-has-error select,
 .aa-filter-field.aa-has-error input,
 .aa-filter-field.aa-has-error textarea {
@@ -89,6 +97,11 @@
   margin-bottom: 12px;
 }
 
+.aa-map-search-field {
+  position: relative;
+  min-width: 0;
+}
+
 .aa-map-search-input {
   width: 100%;
   min-height: 42px;
@@ -102,6 +115,50 @@
 
 .aa-map-search-button {
   white-space: nowrap;
+}
+
+.aa-map-suggestions {
+  position: absolute;
+  z-index: 4;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  display: none;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #d9dde4;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(16, 24, 32, .14);
+}
+
+.aa-map-suggestions.is-active {
+  display: block;
+}
+
+.aa-map-suggestion {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid #eef1f5;
+  background: #fff;
+  color: #101820;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aa-map-suggestion:last-child {
+  border-bottom: 0;
+}
+
+.aa-map-suggestion:hover,
+.aa-map-suggestion:focus {
+  background: #f4f7fb;
+  outline: none;
 }
 
 .aa-airport-map {
