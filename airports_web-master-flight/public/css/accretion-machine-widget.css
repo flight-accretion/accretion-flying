@@ -585,6 +585,9 @@
 }
 
 @media (max-width: 720px) {
+  .aa-result-filter {
+  width: 100%;
+}
     .aa-map-search {
       grid-template-columns: 1fr;
     }
