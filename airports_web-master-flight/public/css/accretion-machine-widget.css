@@ -49,8 +49,114 @@
   font: inherit;
 }
 
+.aa-airport-combobox {
+  position: relative;
+}
+
 .aa-airport-search {
   cursor: pointer;
+}
+
+.aa-airport-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #d9dde4;
+  border-radius: 6px;
+  background: #fff;
+  color: #101820;
+  font: inherit;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aa-airport-toggle:hover,
+.aa-airport-toggle:focus {
+  border-color: #9aa8bc;
+  box-shadow: 0 0 0 3px rgba(42, 91, 180, .1);
+  outline: none;
+}
+
+.aa-airport-toggle.has-value {
+  color: #101820;
+}
+
+.aa-airport-toggle-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aa-airport-toggle-icon {
+  width: 8px;
+  height: 8px;
+  margin-right: 2px;
+  border-right: 2px solid #6f7b8a;
+  border-bottom: 2px solid #6f7b8a;
+  transform: rotate(45deg) translateY(-2px);
+  flex: 0 0 auto;
+}
+
+.aa-airport-dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  padding: 8px;
+  border: 1px solid #d9dde4;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 0 16px 32px rgba(16, 24, 32, .16);
+}
+
+.aa-airport-dropdown[hidden] {
+  display: none;
+}
+
+.aa-airport-options {
+  max-height: 210px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.aa-airport-option {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: #fff;
+  color: #101820;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aa-airport-option:hover,
+.aa-airport-option:focus {
+  background: #eef4ff;
+  outline: none;
+}
+
+.aa-airport-option.is-map-option {
+  color: #0d4ea6;
+  font-weight: 700;
+}
+
+.aa-airport-empty {
+  display: none;
+  padding: 10px;
+  color: #687386;
+  font-size: 14px;
 }
 
 .aa-airport-native {
@@ -63,7 +169,8 @@
 
 .aa-filter-field.aa-has-error select,
 .aa-filter-field.aa-has-error input,
-.aa-filter-field.aa-has-error textarea {
+.aa-filter-field.aa-has-error textarea,
+.aa-filter-field.aa-has-error .aa-airport-toggle {
   border-color: #dc3545;
   box-shadow: 0 0 0 2px rgba(220, 53, 69, .12);
 }
@@ -124,7 +231,7 @@
   left: 0;
   right: 0;
   display: none;
-  max-height: 220px;
+  max-height: 320px;
   overflow-y: auto;
   border: 1px solid #d9dde4;
   border-radius: 6px;

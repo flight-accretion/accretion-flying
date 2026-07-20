@@ -168,49 +168,277 @@
         '<input type="hidden" name="' + escapeHtml(name) + '_latitude">' +
         '<input type="hidden" name="' + escapeHtml(name) + '_longitude">' +
         '<input type="hidden" name="' + escapeHtml(name) + '_name">' +
-        '<select class="aa-airport-search" data-airport-input="' + escapeHtml(name) + '" data-placeholder="' + escapeHtml(label) + '">' +
-          '<option value="">' + escapeHtml(label) + '</option>' +
-        '</select>' +
+        '<div class="aa-airport-combobox" data-airport-combobox>' +
+          '<button class="aa-airport-search aa-airport-toggle" type="button" data-airport-input="' + escapeHtml(name) + '" data-placeholder="' + escapeHtml(label) + '" aria-haspopup="listbox" aria-expanded="false">' +
+            '<span class="aa-airport-toggle-text">' + escapeHtml(label) + '</span>' +
+            '<span class="aa-airport-toggle-icon" aria-hidden="true"></span>' +
+          '</button>' +
+          '<div class="aa-airport-dropdown" hidden>' +
+            '<input class="aa-airport-search-input" type="search" placeholder="Search airport" autocomplete="off" aria-label="Search ' + escapeHtml(label) + '">' +
+            '<div class="aa-airport-options" role="listbox"></div>' +
+            '<div class="aa-airport-empty">No airport found</div>' +
+          '</div>' +
+        '</div>' +
       '</div>';
+  }
+
+  function airportCombobox(input) {
+    return input && input.closest ? input.closest('[data-airport-combobox]') : null;
+  }
+
+  function airportDropdown(input) {
+    var combo = airportCombobox(input);
+    return combo ? combo.querySelector('.aa-airport-dropdown') : null;
+  }
+
+  function airportOptionsElement(input) {
+    var dropdown = airportDropdown(input);
+    return dropdown ? dropdown.querySelector('.aa-airport-options') : null;
+  }
+
+  function airportSearchElement(input) {
+    var dropdown = airportDropdown(input);
+    return dropdown ? dropdown.querySelector('.aa-airport-search-input') : null;
+  }
+
+  function airportEmptyElement(input) {
+    var dropdown = airportDropdown(input);
+    return dropdown ? dropdown.querySelector('.aa-airport-empty') : null;
+  }
+
+  function airportToggleText(input) {
+    return input ? input.querySelector('.aa-airport-toggle-text') : null;
+  }
+
+  function updateAirportPickerButton(input, label) {
+    var text = airportToggleText(input);
+    var placeholder = input ? input.getAttribute('data-placeholder') || 'Airport' : 'Airport';
+
+    if(text) {
+      text.textContent = label || placeholder;
+    }
+
+    if(input) {
+      input.classList.toggle('has-value', !!label);
+    }
+  }
+
+  function findAirportOption(input, value) {
+    var options = airportOptionsElement(input);
+    if(!options) return null;
+
+    var match = null;
+    Array.prototype.some.call(options.querySelectorAll('[data-airport-id]'), function(option) {
+      if(String(option.getAttribute('data-airport-id')) === String(value)) {
+        match = option;
+        return true;
+      }
+
+      return false;
+    });
+
+    return match;
+  }
+
+  function closeAirportDropdown(input) {
+    var dropdown = airportDropdown(input);
+    if(!dropdown) return;
+
+    dropdown.hidden = true;
+    if(input) {
+      input.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function closeOtherAirportDropdowns(widget, currentInput) {
+    if(!widget || !widget.form) return;
+
+    widget.form.querySelectorAll('[data-airport-input]').forEach(function(input) {
+      if(input !== currentInput) {
+        closeAirportDropdown(input);
+      }
+    });
+  }
+
+  function filterAirportOptions(input, query) {
+    var options = airportOptionsElement(input);
+    var empty = airportEmptyElement(input);
+    var needle = normalizeAirportText(query);
+    var visible = 0;
+
+    if(!options) return;
+
+    Array.prototype.forEach.call(options.querySelectorAll('.aa-airport-option'), function(option) {
+      var isMap = option.getAttribute('data-map-option') === '1';
+      var search = option.getAttribute('data-search') || option.textContent || '';
+      var show = !needle || normalizeAirportText(search).indexOf(needle) !== -1;
+
+      if(isMap && needle) {
+        show = false;
+      }
+
+      option.hidden = !show;
+      if(show) {
+        visible++;
+      }
+    });
+
+    if(empty) {
+      empty.style.display = visible ? 'none' : 'block';
+    }
+  }
+
+  function openAirportDropdown(widget, input) {
+    var dropdown = airportDropdown(input);
+    var search = airportSearchElement(input);
+    var options = airportOptionsElement(input);
+
+    if(!dropdown) return;
+
+    closeOtherAirportDropdowns(widget, input);
+    dropdown.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+
+    if(search) {
+      search.value = '';
+      filterAirportOptions(input, '');
+      setTimeout(function() {
+        search.focus();
+      }, 0);
+    }
+
+    if(options) {
+      options.scrollTop = 0;
+    }
+  }
+
+  function selectAirportOption(widget, input, option) {
+    if(!input || !option) return;
+
+    var value = option.getAttribute('data-airport-id') || '';
+
+    if(value === '__map__') {
+      closeAirportDropdown(input);
+      if(isMapPickerWidget(widget)) {
+        openAirportMap(widget, input.getAttribute('data-airport-input'), input);
+      }
+      return;
+    }
+
+    input.setAttribute('data-selected-airport-id', value);
+    input.setAttribute('data-selected-airport-label', option.getAttribute('data-airport-label') || option.textContent || '');
+    input.setAttribute('data-selected-latitude', option.getAttribute('data-latitude') || '');
+    input.setAttribute('data-selected-longitude', option.getAttribute('data-longitude') || '');
+
+    syncAirportInput(widget, input);
+    closeAirportDropdown(input);
+    input.focus({ preventScroll: true });
   }
 
   function fillAirportDatalist(select, airports, widget) {
     if(!select) return;
 
-    var current = select.getAttribute('data-selected-airport-id') || select.value || '';
-    var placeholder = select.getAttribute('data-placeholder') || 'Airport';
-    select.innerHTML = '';
+    if(select.tagName === 'SELECT') {
+      var currentSelectValue = select.getAttribute('data-selected-airport-id') || select.value || '';
+      var selectPlaceholder = select.getAttribute('data-placeholder') || 'Airport';
+      select.innerHTML = '';
 
-    var blank = document.createElement('option');
-    blank.value = '';
-    blank.textContent = placeholder;
-    select.appendChild(blank);
+      var blankOption = document.createElement('option');
+      blankOption.value = '';
+      blankOption.textContent = selectPlaceholder;
+      select.appendChild(blankOption);
+
+      if(isMapPickerWidget(widget)) {
+        var mapOption = document.createElement('option');
+        mapOption.value = '__map__';
+        mapOption.textContent = 'Select from map';
+        mapOption.setAttribute('data-map-option', '1');
+        select.appendChild(mapOption);
+      }
+
+      (airports || []).forEach(function(airport) {
+        var option = document.createElement('option');
+        option.value = airport.id || '';
+        option.textContent = airportLabel(airport);
+        option.setAttribute('data-airport-label', airportLabel(airport));
+        option.setAttribute('data-latitude', airport.latitude || '');
+        option.setAttribute('data-longitude', airport.longitude || '');
+        select.appendChild(option);
+      });
+
+      if(currentSelectValue) {
+        select.value = currentSelectValue;
+      }
+
+      return;
+    }
+
+    var current = select.getAttribute('data-selected-airport-id') || '';
+    var placeholder = select.getAttribute('data-placeholder') || 'Airport';
+    var options = airportOptionsElement(select);
+    if(!options) return;
+
+    options.innerHTML = '';
+
+    function addAirportButton(value, label, attributes) {
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'aa-airport-option';
+      button.setAttribute('role', 'option');
+      button.setAttribute('data-airport-id', value || '');
+      button.setAttribute('data-airport-label', label || '');
+      button.setAttribute('data-search', label || '');
+      button.textContent = label || placeholder;
+
+      Object.keys(attributes || {}).forEach(function(key) {
+        button.setAttribute(key, attributes[key]);
+      });
+
+      options.appendChild(button);
+      return button;
+    }
 
     if(isMapPickerWidget(widget)) {
-      var map = document.createElement('option');
-      map.value = '__map__';
-      map.textContent = 'Select from map';
-      map.setAttribute('data-map-option', '1');
-      select.appendChild(map);
+      addAirportButton('__map__', 'Select from map', {
+        'data-map-option': '1'
+      }).classList.add('is-map-option');
     }
 
     (airports || []).forEach(function(airport) {
-      var option = document.createElement('option');
-      option.value = airport.id || '';
-      option.textContent = airportLabel(airport);
-      option.setAttribute('data-airport-label', airportLabel(airport));
-      option.setAttribute('data-latitude', airport.latitude || '');
-      option.setAttribute('data-longitude', airport.longitude || '');
-      select.appendChild(option);
+      addAirportButton(airport.id || '', airportLabel(airport), {
+        'data-latitude': airport.latitude || '',
+        'data-longitude': airport.longitude || '',
+        'data-search': airportSearchText(airport)
+      });
     });
 
-    if(current) {
-      select.value = current;
-    }
+    var airport = current ? airportById(widget, current) : null;
+    updateAirportPickerButton(select, airport ? airportLabel(airport) : '');
+    filterAirportOptions(select, '');
   }
 
   function ensureAirportOption(select, airport) {
     if(!select || !airport || !airport.id) return;
+
+    if(select.tagName !== 'SELECT') {
+      if(findAirportOption(select, airport.id)) return;
+
+      var options = airportOptionsElement(select);
+      if(!options) return;
+
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'aa-airport-option';
+      button.setAttribute('role', 'option');
+      button.setAttribute('data-airport-id', airport.id);
+      button.setAttribute('data-airport-label', airportLabel(airport));
+      button.setAttribute('data-latitude', airport.latitude || '');
+      button.setAttribute('data-longitude', airport.longitude || '');
+      button.setAttribute('data-search', airportSearchText(airport));
+      button.textContent = airportLabel(airport);
+      options.appendChild(button);
+      return;
+    }
 
     var exists = Array.prototype.some.call(select.options, function(option) {
       return String(option.value) === String(airport.id);
@@ -283,7 +511,14 @@
 
     if(select) {
       select.setAttribute('data-selected-airport-id', airport.id || '');
-      select.value = airport.id || '';
+      if(select.tagName === 'SELECT') {
+        select.value = airport.id || '';
+      } else {
+        select.setAttribute('data-selected-airport-label', airportLabel(airport));
+        select.setAttribute('data-selected-latitude', selectedLat || airport.latitude || '');
+        select.setAttribute('data-selected-longitude', selectedLng || airport.longitude || '');
+        updateAirportPickerButton(select, airportLabel(airport));
+      }
     }
   }
 
@@ -295,6 +530,20 @@
     var latInput = airportFieldElement(input, name + '_latitude');
     var lngInput = airportFieldElement(input, name + '_longitude');
     var nameInput = airportFieldElement(input, name + '_name');
+
+    if(input.tagName !== 'SELECT') {
+      var selectedId = input.getAttribute('data-selected-airport-id') || '';
+      var selectedAirport = selectedId ? airportById(widget, selectedId) : null;
+      var selectedLabel = input.getAttribute('data-selected-airport-label') || (selectedAirport ? airportLabel(selectedAirport) : '');
+
+      if(hidden) hidden.value = selectedId;
+      if(latInput) latInput.value = input.getAttribute('data-selected-latitude') || (selectedAirport ? selectedAirport.latitude || '' : '');
+      if(lngInput) lngInput.value = input.getAttribute('data-selected-longitude') || (selectedAirport ? selectedAirport.longitude || '' : '');
+      if(nameInput) nameInput.value = selectedLabel;
+
+      updateAirportPickerButton(input, selectedLabel);
+      return selectedAirport;
+    }
 
     if(input.value === '__map__') {
       return null;
@@ -327,11 +576,25 @@
 
       if(airport) {
         ensureAirportOption(input, airport);
-        input.value = airport.id || '';
         input.setAttribute('data-selected-airport-id', airport.id || '');
+        if(input.tagName === 'SELECT') {
+          input.value = airport.id || '';
+        } else {
+          input.setAttribute('data-selected-airport-label', airportLabel(airport));
+          input.setAttribute('data-selected-latitude', airport.latitude || '');
+          input.setAttribute('data-selected-longitude', airport.longitude || '');
+          updateAirportPickerButton(input, airportLabel(airport));
+        }
       } else {
-        input.value = '';
         input.setAttribute('data-selected-airport-id', '');
+        input.setAttribute('data-selected-airport-label', '');
+        input.setAttribute('data-selected-latitude', '');
+        input.setAttribute('data-selected-longitude', '');
+        if(input.tagName === 'SELECT') {
+          input.value = '';
+        } else {
+          updateAirportPickerButton(input, '');
+        }
       }
 
       syncAirportInput(widget, input);
@@ -347,6 +610,66 @@
 
       input.setAttribute('data-aa-bound', '1');
       fillAirportDatalist(input, widget.airports, widget);
+
+      if(input.tagName !== 'SELECT') {
+        input.addEventListener('click', function() {
+          var dropdown = airportDropdown(input);
+
+          if(dropdown && !dropdown.hidden) {
+            closeAirportDropdown(input);
+          } else {
+            openAirportDropdown(widget, input);
+          }
+        });
+
+        input.addEventListener('keydown', function(event) {
+          if(event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
+            event.preventDefault();
+            openAirportDropdown(widget, input);
+          }
+
+          if(event.key === 'Escape') {
+            closeAirportDropdown(input);
+          }
+        });
+
+        var search = airportSearchElement(input);
+        if(search) {
+          search.addEventListener('input', function() {
+            filterAirportOptions(input, search.value);
+            var options = airportOptionsElement(input);
+            if(options) {
+              options.scrollTop = 0;
+            }
+          });
+
+          search.addEventListener('keydown', function(event) {
+            if(event.key === 'Escape') {
+              closeAirportDropdown(input);
+              input.focus({ preventScroll: true });
+            }
+          });
+        }
+
+        var options = airportOptionsElement(input);
+        if(options) {
+          options.addEventListener('click', function(event) {
+            var option = event.target && event.target.closest ? event.target.closest('.aa-airport-option') : null;
+            if(option) {
+              selectAirportOption(widget, input, option);
+            }
+          });
+        }
+
+        document.addEventListener('click', function(event) {
+          var combo = airportCombobox(input);
+          if(combo && !combo.contains(event.target)) {
+            closeAirportDropdown(input);
+          }
+        });
+
+        return;
+      }
 
       input.addEventListener('change', function() {
         if(input.value === '__map__') {
@@ -738,7 +1061,7 @@
   function setAirportMapSelection(widget, modal, lat, lng, label) {
     modal.setAttribute('data-latitude', lat);
     modal.setAttribute('data-longitude', lng);
-    modal.querySelector('.aa-map-status').textContent = (label ? 'Selected: ' + label + ' ' : 'Selected: ') + '(' + Number(lat).toFixed(5) + ', ' + Number(lng).toFixed(5) + ')';
+    modal.querySelector('.aa-map-status').textContent = 'Location picked. Press Select Airport to use the nearest airport.';
 
     if(!widget.airportMap) {
       return;
@@ -803,7 +1126,7 @@
     }
 
     widget.mapSearchResults = places;
-    suggestions.innerHTML = places.slice(0, 5).map(function(place, index) {
+    suggestions.innerHTML = places.slice(0, 7).map(function(place, index) {
       var label = mapPlaceLabel(place) || query;
       return '<button class="aa-map-suggestion" type="button" role="option" data-place-index="' + index + '">' + escapeHtml(label) + '</button>';
     }).join('');
@@ -844,9 +1167,16 @@
 
     widget.airportMapTargetInput = targetInput || null;
     var modal = getAirportMapModal(widget);
+    var searchInput = modal.querySelector('.aa-map-search-input');
+
     modal.classList.add('is-open');
     modal.setAttribute('data-target-field', fieldName);
+    modal.removeAttribute('data-latitude');
+    modal.removeAttribute('data-longitude');
     modal.querySelector('.aa-map-status').textContent = 'Click on the map, then press Select Airport.';
+    if(searchInput) {
+      searchInput.value = '';
+    }
     hideMapSuggestions(modal);
 
     setTimeout(function() {
