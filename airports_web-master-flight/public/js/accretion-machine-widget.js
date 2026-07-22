@@ -136,6 +136,19 @@
       .trim();
   }
 
+  function airportTextMatches(searchText, query) {
+    var haystack = normalizeAirportText(searchText);
+    var terms = normalizeAirportText(query).split(/\s+/).filter(Boolean);
+
+    if(!terms.length) {
+      return true;
+    }
+
+    return terms.every(function(term) {
+      return haystack.indexOf(term) !== -1;
+    });
+  }
+
   function airportSearchText(airport) {
     return normalizeAirportText([
       airportLabel(airport),
@@ -174,7 +187,7 @@
             '<span class="aa-airport-toggle-icon" aria-hidden="true"></span>' +
           '</button>' +
           '<div class="aa-airport-dropdown" hidden>' +
-            '<input class="aa-airport-search-input" type="search" placeholder="Search airport" autocomplete="off" aria-label="Search ' + escapeHtml(label) + '">' +
+            '<input class="aa-airport-search-input" type="search" placeholder="Search name, city, ICAO, IATA" autocomplete="off" aria-label="Search ' + escapeHtml(label) + ' by name, city, ICAO, or IATA">' +
             '<div class="aa-airport-options" role="listbox"></div>' +
             '<div class="aa-airport-empty">No airport found</div>' +
           '</div>' +
@@ -271,7 +284,7 @@
     Array.prototype.forEach.call(options.querySelectorAll('.aa-airport-option'), function(option) {
       var isMap = option.getAttribute('data-map-option') === '1';
       var search = option.getAttribute('data-search') || option.textContent || '';
-      var show = !needle || normalizeAirportText(search).indexOf(needle) !== -1;
+      var show = !needle || airportTextMatches(search, query);
 
       if(isMap && needle) {
         show = false;
@@ -301,6 +314,8 @@
 
     if(search) {
       search.value = '';
+      cancelAirportApiSearch(input);
+      fillAirportDatalist(input, widget.airports, widget);
       filterAirportOptions(input, '');
       setTimeout(function() {
         search.focus();
@@ -478,7 +493,7 @@
         return true;
       }
 
-      if(!contains && searchable.indexOf(needle) !== -1) {
+      if(!contains && airportTextMatches(searchable, value)) {
         contains = airport;
       }
 
@@ -636,7 +651,12 @@
         var search = airportSearchElement(input);
         if(search) {
           search.addEventListener('input', function() {
-            filterAirportOptions(input, search.value);
+            var query = search.value;
+            if(normalizeAirportText(query).length < 2) {
+              fillAirportDatalist(input, widget.airports, widget);
+            }
+            filterAirportOptions(input, query);
+            queueAirportApiSearch(widget, input, query);
             var options = airportOptionsElement(input);
             if(options) {
               options.scrollTop = 0;
@@ -719,6 +739,114 @@
 
       return response.json();
     });
+  }
+
+  function airportSearchUrl(widget, query, limit) {
+    var url = widget.apiBase + '/api/v1/airports?limit=' + encodeURIComponent(limit || 1000);
+
+    if(query) {
+      url += '&q=' + encodeURIComponent(query);
+    }
+
+    if(widget.apiKey) {
+      url += '&api_key=' + encodeURIComponent(widget.apiKey);
+    }
+
+    return url;
+  }
+
+  function rememberAirports(widget, airports) {
+    if(!widget) return;
+
+    widget.airports = widget.airports || [];
+    widget.airportById = widget.airportById || {};
+
+    (airports || []).forEach(function(airport) {
+      if(!airport || !airport.id) return;
+
+      var id = String(airport.id);
+      var cached = widget.airportById[id] || {};
+      var merged = {};
+      Object.keys(cached).forEach(function(key) {
+        merged[key] = cached[key];
+      });
+      Object.keys(airport).forEach(function(key) {
+        merged[key] = airport[key];
+      });
+
+      widget.airportById[id] = merged;
+
+      var replaced = false;
+      widget.airports.some(function(existing, index) {
+        if(existing && String(existing.id) === id) {
+          widget.airports[index] = merged;
+          replaced = true;
+          return true;
+        }
+
+        return false;
+      });
+
+      if(!replaced) {
+        widget.airports.push(merged);
+      }
+    });
+  }
+
+  function cancelAirportApiSearch(input) {
+    if(!input) return;
+
+    if(input._aaAirportSearchTimer) {
+      clearTimeout(input._aaAirportSearchTimer);
+      input._aaAirportSearchTimer = null;
+    }
+
+    input.removeAttribute('data-airport-remote-query');
+  }
+
+  function queueAirportApiSearch(widget, input, query) {
+    if(!widget || !input) return;
+
+    var rawQuery = String(query || '').trim();
+    var normalizedQuery = normalizeAirportText(rawQuery);
+
+    if(input._aaAirportSearchTimer) {
+      clearTimeout(input._aaAirportSearchTimer);
+    }
+
+    if(normalizedQuery.length < 2) {
+      cancelAirportApiSearch(input);
+      return;
+    }
+
+    input.setAttribute('data-airport-remote-query', normalizedQuery);
+    input._aaAirportSearchTimer = setTimeout(function() {
+      fetchJson(airportSearchUrl(widget, rawQuery, 80)).then(function(response) {
+        if(input.getAttribute('data-airport-remote-query') !== normalizedQuery) {
+          return;
+        }
+
+        var search = airportSearchElement(input);
+        var currentQuery = search ? search.value : rawQuery;
+        if(normalizeAirportText(currentQuery) !== normalizedQuery) {
+          return;
+        }
+
+        var airports = response.data || [];
+        rememberAirports(widget, airports);
+        fillAirportDatalist(input, airports, widget);
+        filterAirportOptions(input, currentQuery);
+
+        var options = airportOptionsElement(input);
+        if(options) {
+          options.scrollTop = 0;
+        }
+      }).catch(function() {
+        if(input.getAttribute('data-airport-remote-query') === normalizedQuery) {
+          filterAirportOptions(input, rawQuery);
+        }
+      });
+    }, 250);
   }
 
   function setStatus(widget, message, isError) {
@@ -1308,10 +1436,7 @@
           return;
         }
 
-        if(!airportById(widget, airport.id)) {
-          widget.airports.push(airport);
-        }
-        widget.airportById[String(airport.id)] = airport;
+        rememberAirports(widget, [airport]);
         setAirportPickerValue(widget, fieldName, airport, lat, lng, widget.airportMapTargetInput);
         widget.airportMapTargetInput = null;
         modal.classList.remove('is-open');
@@ -1709,19 +1834,12 @@
   }
 
   function loadAirports(widget) {
-  var url = widget.apiBase + '/api/v1/airports?limit=1000';
-
-  if(widget.apiKey) {
-    url += '&api_key=' + encodeURIComponent(widget.apiKey);
-  }
+  var url = airportSearchUrl(widget, '', 1000);
 
   return fetchJson(url).then(function(response) {
-    widget.airports = response.data || [];
+    widget.airports = [];
     widget.airportById = {};
-
-    widget.airports.forEach(function(airport) {
-      widget.airportById[String(airport.id)] = airport;
-    });
+    rememberAirports(widget, response.data || []);
 
     widget.form.querySelectorAll('[data-airport-input]').forEach(function(input) {
       fillAirportDatalist(input, widget.airports, widget);

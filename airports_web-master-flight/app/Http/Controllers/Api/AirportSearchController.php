@@ -20,50 +20,83 @@ class AirportSearchController extends Controller
     }
 
     try {
-    $columns = Schema::getColumnListing('airport');
-    $query = Airport::where('status', 1);
-    $search = trim((string) $request->query('q', $request->query('search', '')));
-    $limit = (int) $request->query('limit', 500);
-    $limit = max(1, min($limit, 1000));
+      $columns = Schema::getColumnListing('airport');
+      $has_airport_city_name = in_array('city_name', $columns, true);
+      $has_city_table = !$has_airport_city_name && Schema::hasTable('city');
+      $query = Airport::from('airport')
+        ->where('airport.status', 1)
+        ->select('airport.*');
+      $search = trim((string) $request->query('q', $request->query('search', '')));
+      $limit = (int) $request->query('limit', 500);
+      $limit = max(1, min($limit, 1000));
 
-    $lat = $request->query('latitude', $request->query('lat', null));
-    $lng = $request->query('longitude', $request->query('lng', null));
-    $nearest = (string) $request->query('nearest', '') === '1';
+      $lat = $request->query('latitude', $request->query('lat', null));
+      $lng = $request->query('longitude', $request->query('lng', null));
+      $nearest = (string) $request->query('nearest', '') === '1';
+
+      if($has_city_table){
+        $query
+          ->leftJoin('city', 'city.id', '=', 'airport.city_id')
+          ->addSelect('city.name as city_name');
+      }
+
+      $search_fields = ['airport.name'];
+
+      if($has_airport_city_name){
+        $search_fields[] = 'airport.city_name';
+      } else if($has_city_table){
+        $search_fields[] = 'city.name';
+      }
+
+      foreach(['iata', 'icao'] as $column){
+        if(in_array($column, $columns, true)){
+          $search_fields[] = 'airport.'.$column;
+        }
+      }
 
       if($search !== ''){
-        $query->where(function($sub_query) use ($search, $columns) {
-          $sub_query->where('name', 'like', '%'.$search.'%');
+        $terms = array_filter(preg_split('/\s+/', $search));
 
-          foreach(['city_name', 'state_name', 'country_name', 'iata', 'icao'] as $column){
-            if(in_array($column, $columns, true)){
-              $sub_query->orWhere($column, 'like', '%'.$search.'%');
-            }
+        $query->where(function($search_query) use ($terms, $search_fields) {
+          foreach($terms as $term){
+            $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term).'%';
+
+            $search_query->where(function($term_query) use ($search_fields, $like) {
+              foreach($search_fields as $index => $column){
+                if($index === 0){
+                  $term_query->where($column, 'like', $like);
+                } else {
+                  $term_query->orWhere($column, 'like', $like);
+                }
+              }
+            });
           }
         });
       }
 
-    if($nearest && is_numeric($lat) && is_numeric($lng)){
-      $lat = (float) $lat;
-      $lng = (float) $lng;
-      $limit = 1;
+      if($nearest && is_numeric($lat) && is_numeric($lng)){
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+        $limit = 1;
 
-      $query
-        ->whereNotNull('latitude')
-        ->whereNotNull('longitude')
-        ->select('*')
-        ->selectRaw(
-          '(6371 * acos(least(1, greatest(-1, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude)))))) as distance_km',
-          [$lat, $lng, $lat]
-        )
-        ->orderBy('distance_km');
-    } else {
-      if(in_array('city_name', $columns, true)){
-        $query->orderBy('city_name');
+        $query
+          ->whereNotNull('airport.latitude')
+          ->whereNotNull('airport.longitude')
+          ->selectRaw(
+            '(6371 * acos(least(1, greatest(-1, cos(radians(?)) * cos(radians(airport.latitude)) * cos(radians(airport.longitude) - radians(?)) + sin(radians(?)) * sin(radians(airport.latitude)))))) as distance_km',
+            [$lat, $lng, $lat]
+          )
+          ->orderBy('distance_km');
+      } else {
+        if($has_airport_city_name){
+          $query->orderBy('airport.city_name');
+        } else if($has_city_table){
+          $query->orderBy('city.name');
+        }
       }
-    }
 
       $airports = $query
-        ->orderBy('name')
+        ->orderBy('airport.name')
         ->limit($limit)
         ->get()
         ->map(function($airport) {
@@ -86,13 +119,14 @@ class AirportSearchController extends Controller
 
       return $this->apiResponse([
         'success' => true,
-       'meta' => [
-        'count' => $airports->count(),
-        'search' => $search,
-        'nearest' => $nearest,
-        'latitude' => is_numeric($lat) ? (float) $lat : null,
-        'longitude' => is_numeric($lng) ? (float) $lng : null,
-      ],
+        'meta' => [
+          'count' => $airports->count(),
+          'search' => $search,
+          'search_fields' => ['name', 'city', 'iata', 'icao'],
+          'nearest' => $nearest,
+          'latitude' => is_numeric($lat) ? (float) $lat : null,
+          'longitude' => is_numeric($lng) ? (float) $lng : null,
+        ],
         'data' => $airports,
       ], 200, $request);
     } catch(Exception $exception) {
